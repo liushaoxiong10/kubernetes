@@ -491,8 +491,10 @@ EOF
 #   env-var GO15VENDOREXPERIMENT=1
 #   current directory is within GOPATH
 kube::golang::setup_env() {
+  # 初始化go环境
   kube::golang::verify_go_version
 
+  # 创建gopath 编译目录
   kube::golang::create_gopath_tree
 
   export GOPATH="${KUBE_GOPATH}"
@@ -668,6 +670,7 @@ kube::golang::build_some_binaries() {
    fi
 }
 
+# 编译
 kube::golang::build_binaries_for_platform() {
   local platform=$1
 
@@ -797,6 +800,7 @@ kube::golang::build_binaries() {
       platforms=("${host_platform}")
     fi
 
+    # 参数获取要编译的程序
     local binaries
     binaries=($(kube::golang::binaries_from_targets "${targets[@]}"))
 

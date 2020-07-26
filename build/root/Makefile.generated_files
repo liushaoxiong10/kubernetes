@@ -34,6 +34,11 @@ SHELL := /bin/bash
 
 # This rule collects all the generated file sets into a single rule.  Other
 # rules should depend on this to ensure generated files are rebuilt.
+# gen_conversion 自动生成convert函数的代码生成器，用于资源对象的版本转换函数
+# gen_deepcopy 自动生成deepcopy函数的代码生成器，用于资源对象的深复制函数
+# gen_defaulter 自动生成defaulter函数的代码生成器，用于资源对象的默认值函数
+# gen_bindata 将静态资源嵌入go中，例如在web开发中将静态html，javascript等静态资源文件嵌入go中并提供一些操作方法
+# gen_openapi 自动生成openapi定义文件的代码生成器
 .PHONY: generated_files
 generated_files: gen_deepcopy gen_defaulter gen_conversion gen_openapi gen_bindata
 

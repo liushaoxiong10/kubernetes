@@ -31,8 +31,11 @@ source "${KUBE_ROOT}/build/lib/release.sh"
 
 KUBE_RELEASE_RUN_TESTS=${KUBE_RELEASE_RUN_TESTS-y}
 
+# 构建环境配置&校验
 kube::build::verify_prereqs
+# 根据dockerfile 构建镜像
 kube::build::build_image
+# 构建kube
 kube::build::run_build_command make cross
 
 if [[ $KUBE_RELEASE_RUN_TESTS =~ ^[yY]$ ]]; then
@@ -40,6 +43,8 @@ if [[ $KUBE_RELEASE_RUN_TESTS =~ ^[yY]$ ]]; then
   kube::build::run_build_command make test-integration
 fi
 
+# 使用同步容器同步二进制
 kube::build::copy_output
 
+# 文件打包
 kube::release::package_tarballs

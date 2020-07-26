@@ -415,6 +415,7 @@ function kube::build::build_image() {
   # Make sure the context directory owned by the right user for syncing sources to container.
   chown -R "${USER_ID}":"${GROUP_ID}" "${LOCAL_OUTPUT_BUILD_CONTEXT}"
 
+  # 复制构建镜像所需要的文件
   cp /etc/localtime "${LOCAL_OUTPUT_BUILD_CONTEXT}/"
 
   cp "${KUBE_ROOT}/build/build-image/Dockerfile" "${LOCAL_OUTPUT_BUILD_CONTEXT}/Dockerfile"
@@ -424,6 +425,7 @@ function kube::build::build_image() {
 
   kube::build::update_dockerfile
   kube::build::set_proxy
+  # 构建容器镜像
   kube::build::docker_build "${KUBE_BUILD_IMAGE}" "${LOCAL_OUTPUT_BUILD_CONTEXT}" 'false'
 
   # Clean up old versions of everything
@@ -432,7 +434,9 @@ function kube::build::build_image() {
   kube::build::docker_delete_old_containers "${KUBE_DATA_CONTAINER_NAME_BASE}" "${KUBE_DATA_CONTAINER_NAME}"
   kube::build::docker_delete_old_images "${KUBE_BUILD_IMAGE_REPO}" "${KUBE_BUILD_IMAGE_TAG_BASE}" "${KUBE_BUILD_IMAGE_TAG}"
 
+  # 运行存储容器并挂载volume 
   kube::build::ensure_data_container
+  # 运行同步容器，并挂在volume，通过rsync同步源码到存储
   kube::build::sync_to_container
 }
 
