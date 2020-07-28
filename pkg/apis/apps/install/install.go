@@ -16,6 +16,7 @@ limitations under the License.
 
 // Package install installs the apps API group, making it available as
 // an option to all of the API encoding/decoding machinery.
+// 把当前的资源组下的所有资源注册到资源注册表中
 package install
 
 import (
@@ -23,7 +24,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/apis/apps"
-	"k8s.io/kubernetes/pkg/apis/apps/v1"
+	v1 "k8s.io/kubernetes/pkg/apis/apps/v1"
 	"k8s.io/kubernetes/pkg/apis/apps/v1beta1"
 	"k8s.io/kubernetes/pkg/apis/apps/v1beta2"
 )
@@ -38,5 +39,6 @@ func Install(scheme *runtime.Scheme) {
 	utilruntime.Must(v1beta1.AddToScheme(scheme))
 	utilruntime.Must(v1beta2.AddToScheme(scheme))
 	utilruntime.Must(v1.AddToScheme(scheme))
+	// 首选版本顺序v1, v2beta2, v1beta1
 	utilruntime.Must(scheme.SetVersionPriority(v1.SchemeGroupVersion, v1beta2.SchemeGroupVersion, v1beta1.SchemeGroupVersion))
 }

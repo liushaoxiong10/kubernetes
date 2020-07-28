@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+// 当前包的注释，代码生成器的全局tag
 
 // +k8s:deepcopy-gen=package
 

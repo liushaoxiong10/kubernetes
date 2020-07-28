@@ -93,6 +93,7 @@ type GroupVersionKindProvider interface {
 }
 
 // Lister is an object that can retrieve resources that match the provided field and label criteria.
+资源对象获取（对个资源对象）
 type Lister interface {
 	// NewList returns an empty object that can be used with the List call.
 	// This object must be a pointer type for use with Codec.DecodeInto([]byte, runtime.Object)
@@ -112,6 +113,7 @@ type Exporter interface {
 }
 
 // Getter is an object that can retrieve a named RESTful resource.
+// 资源对象获取（单个资源对象）
 type Getter interface {
 	// Get finds a resource in the storage by name and returns it.
 	// Although it can return an arbitrary error value, IsNotFound(err) is true for the
@@ -146,6 +148,7 @@ type TableConvertor interface {
 
 // GracefulDeleter knows how to pass deletion options to allow delayed deletion of a
 // RESTful object.
+// 资源对象删除（单个资源对象）
 type GracefulDeleter interface {
 	// Delete finds a resource in the storage and deletes it.
 	// If options are provided, the resource will attempt to honor them or return an invalid
@@ -161,6 +164,7 @@ type GracefulDeleter interface {
 
 // CollectionDeleter is an object that can delete a collection
 // of RESTful resources.
+// 资源对象删除（多个资源对象）
 type CollectionDeleter interface {
 	// DeleteCollection selects all resources in the storage matching given 'listOptions'
 	// and deletes them. If 'options' are provided, the resource will attempt to honor
@@ -171,6 +175,7 @@ type CollectionDeleter interface {
 }
 
 // Creater is an object that can create an instance of a RESTful object.
+// 资源对象创建
 type Creater interface {
 	// New returns an empty object that can be used with Create after request data has been put into it.
 	// This object must be a pointer type for use with Codec.DecodeInto([]byte, runtime.Object)
@@ -226,6 +231,7 @@ func ValidateAllObjectUpdateFunc(obj, old runtime.Object) error {
 }
 
 // Updater is an object that can update an instance of a RESTful object.
+// // 资源对象更新（完整资源对象的更新）
 type Updater interface {
 	// New returns an empty object that can be used with Update after request data has been put into it.
 	// This object must be a pointer type for use with Codec.DecodeInto([]byte, runtime.Object)
@@ -248,6 +254,7 @@ type CreaterUpdater interface {
 var _ Updater = CreaterUpdater(nil)
 
 // Patcher is a storage object that supports both get and update.
+// 资源对象更新（局部资源对象的更新）
 type Patcher interface {
 	Getter
 	Updater
@@ -255,6 +262,7 @@ type Patcher interface {
 
 // Watcher should be implemented by all Storage objects that
 // want to offer the ability to watch for changes through the watch api.
+// 资源对象监控
 type Watcher interface {
 	// 'label' selects on labels; 'field' selects on the object's fields. Not all fields
 	// are supported; an error should be returned if 'field' tries to select on a field that

@@ -882,6 +882,7 @@ type List struct {
 type APIVersions struct {
 	TypeMeta `json:",inline"`
 	// versions are the api versions that are available.
+	// 支持的资源版本列表
 	Versions []string `json:"versions" protobuf:"bytes,1,rep,name=versions"`
 	// a map of client CIDR to server address that is serving this group.
 	// This is to help clients reach servers in the most network-efficient way possible.
@@ -910,11 +911,14 @@ type APIGroupList struct {
 type APIGroup struct {
 	TypeMeta `json:",inline"`
 	// name is the name of the group.
+	// 资源组名称
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// versions are the versions supported in this group.
+	// 资源组下所支持的资源版本
 	Versions []GroupVersionForDiscovery `json:"versions" protobuf:"bytes,2,rep,name=versions"`
 	// preferredVersion is the version preferred by the API server, which
 	// probably is the storage version.
+	// 首选版本
 	// +optional
 	PreferredVersion GroupVersionForDiscovery `json:"preferredVersion,omitempty" protobuf:"bytes,3,opt,name=preferredVersion"`
 	// a map of client CIDR to server address that is serving this group.
@@ -948,27 +952,34 @@ type GroupVersionForDiscovery struct {
 }
 
 // APIResource specifies the name of a resource and whether it is namespaced.
+// 资源
 type APIResource struct {
 	// name is the plural name of the resource.
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// singularName is the singular name of the resource.  This allows clients to handle plural and singular opaquely.
 	// The singularName is more correct for reporting status on a single item and both singular and plural are allowed
 	// from the kubectl CLI interface.
+	// 资源的单数名称，他必须由小写字母组成，默认使用资源种类(kind)的小写形式进行命名
 	SingularName string `json:"singularName" protobuf:"bytes,6,opt,name=singularName"`
 	// namespaced indicates if a resource is namespaced or not.
+	// 是否拥有所属命名空间
 	Namespaced bool `json:"namespaced" protobuf:"varint,2,opt,name=namespaced"`
 	// group is the preferred group of the resource.  Empty implies the group of the containing resource list.
 	// For subresources, this may have a different value, for example: Scale".
+	// 所在的资源组的名称
 	Group string `json:"group,omitempty" protobuf:"bytes,8,opt,name=group"`
 	// version is the preferred version of the resource.  Empty implies the version of the containing resource list
 	// For subresources, this may have a different value, for example: v1 (while inside a v1beta1 version of the core resource's group)".
+	// 所在的资源版本
 	Version string `json:"version,omitempty" protobuf:"bytes,9,opt,name=version"`
 	// kind is the kind for the resource (e.g. 'Foo' is the kind for a resource 'foo')
+	// 资源种类
 	Kind string `json:"kind" protobuf:"bytes,3,opt,name=kind"`
 	// verbs is a list of supported kube verbs (this includes get, list, watch, create,
 	// update, patch, delete, deletecollection, and proxy)
 	Verbs Verbs `json:"verbs" protobuf:"bytes,4,opt,name=verbs"`
 	// shortNames is a list of suggested short names of the resource.
+	// 简称
 	ShortNames []string `json:"shortNames,omitempty" protobuf:"bytes,5,rep,name=shortNames"`
 	// categories is a list of the grouped resources this resource belongs to (e.g. 'all')
 	Categories []string `json:"categories,omitempty" protobuf:"bytes,7,rep,name=categories"`
@@ -984,6 +995,7 @@ type APIResource struct {
 }
 
 // Verbs masks the value so protobuf can generate
+// 资源操作方法
 //
 // +protobuf.nullable=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false

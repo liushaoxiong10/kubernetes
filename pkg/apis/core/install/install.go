@@ -23,16 +23,20 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	"k8s.io/kubernetes/pkg/apis/core"
-	"k8s.io/kubernetes/pkg/apis/core/v1"
+	v1 "k8s.io/kubernetes/pkg/apis/core/v1"
 )
 
 func init() {
+	// legacyscheme.Scheme kube-apiserver组件的全局资源注册表，kubernetes的所有资源信息都交给资源注册表统一管理
 	Install(legacyscheme.Scheme)
 }
 
 // Install registers the API group and adds types to a scheme
 func Install(scheme *runtime.Scheme) {
+	// 注册core资源组内部版本的资源
 	utilruntime.Must(core.AddToScheme(scheme))
+	// 注册core资源组外部版本的资源
 	utilruntime.Must(v1.AddToScheme(scheme))
+	// 注册资源组的版本顺序，排在最前的为首选版本
 	utilruntime.Must(scheme.SetVersionPriority(v1.SchemeGroupVersion))
 }

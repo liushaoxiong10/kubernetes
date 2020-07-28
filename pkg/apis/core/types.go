@@ -26,16 +26,20 @@ import (
 
 const (
 	// NamespaceDefault means the object is in the default namespace which is applied when not specified by clients
+	// 所有未指定命名空间的资源对象都会被分配到该命名空间
 	NamespaceDefault = "default"
 	// NamespaceAll is the default argument to specify on a context when you want to list or filter resources across all namespaces
 	NamespaceAll = ""
 	// NamespaceNone is the argument for a context when there is no namespace.
 	NamespaceNone = ""
 	// NamespaceSystem is the system namespace where we place system components.
+	// 所有由kubernetes系统创建的资源对象都会被分配到kube-system命名空间
 	NamespaceSystem = "kube-system"
 	// NamespacePublic is the namespace where we place public info (ConfigMaps)
+	// 再次命名空间下的资源对象可以被所有人访问（包括未认证用户）
 	NamespacePublic = "kube-public"
 	// NamespaceNodeLease is the namespace where we place node lease objects (used for node heartbeats)
+	// 此命名空间下存放来自节点的心跳记录
 	NamespaceNodeLease = "kube-node-lease"
 	// TerminationMessagePathDefault means the default path to capture the application termination message running in a container
 	TerminationMessagePathDefault = "/dev/termination-log"
@@ -2883,6 +2887,7 @@ type PodStatusResult struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Pod is a collection of containers, used as either input (create, update) or as output (list, get).
+// pod资源，内部版本
 type Pod struct {
 	metav1.TypeMeta
 	// +optional

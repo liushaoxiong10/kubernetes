@@ -228,13 +228,17 @@ type SelfLinker interface {
 // expected to be serialized to the wire, the interface an Object must provide to the Scheme allows
 // serializers to set the kind, version, and group the object is represented as. An Object may choose
 // to return a no-op ObjectKindAccessor in cases where it is not expected to be serialized.
+// runtime.Object 基础接口
 type Object interface {
+	// 用于设置并返回GroupVersionKind
 	GetObjectKind() schema.ObjectKind
+	// 用于深复制当前资源对象并返回
 	DeepCopyObject() Object
 }
 
 // Unstructured objects store values as map[string]interface{}, with only values that can be serialized
 // to JSON allowed.
+// 非结构化数据处理
 type Unstructured interface {
 	Object
 	// UnstructuredContent returns a non-nil map with this object's contents. Values may be

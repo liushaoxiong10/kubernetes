@@ -43,6 +43,7 @@ func protobufSerializer(scheme *runtime.Scheme) (serializerType, bool) {
 	}, true
 }
 
+// 初始化protobuf 编解码器
 func init() {
 	serializerExtensions = append(serializerExtensions, protobufSerializer)
 }

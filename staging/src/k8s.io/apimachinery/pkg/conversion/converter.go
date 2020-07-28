@@ -47,13 +47,17 @@ var DefaultNameFunc = func(t reflect.Type) string { return t.Name() }
 type ConversionFunc func(a, b interface{}, scope Scope) error
 
 // Converter knows how to convert one type to another.
+// 资源版本转换
 type Converter struct {
 	// Map from the conversion pair to a function which can
 	// do the conversion.
-	conversionFuncs          ConversionFuncs
+	// 默认转换函数
+	conversionFuncs ConversionFuncs
+	// 自动生成的转换函数，一般在资源目录下写zz_generated.converter.go文件中
 	generatedConversionFuncs ConversionFuncs
 
 	// Set of conversions that should be treated as a no-op
+	// 若资源对象注册到此字段，则忽略此资源对象的转换操作
 	ignoredConversions map[typePair]struct{}
 
 	// This is a map from a source field type and name, to a list of destination
@@ -77,6 +81,7 @@ type Converter struct {
 	// nameFunc is called to retrieve the name of a type; this name is used for the
 	// purpose of deciding whether two types match or not (i.e., will we attempt to
 	// do a conversion). The default returns the go type name.
+	// 在转换过程中其用于获取资源种类的名称，改函数被定义在vendor/k8s.io/apimachinery/pkg/runtime/scheme.go中
 	nameFunc func(t reflect.Type) string
 }
 
@@ -158,6 +163,7 @@ func NewConversionFuncs() ConversionFuncs {
 	}
 }
 
+// 转换函数结构
 type ConversionFuncs struct {
 	fns     map[typePair]reflect.Value
 	untyped map[typePair]ConversionFunc
@@ -491,6 +497,7 @@ func (c *Converter) doConversion(src, dest interface{}, flags FieldMatchingFlags
 		flags:     flags,
 		meta:      meta,
 	}
+	// 从conversionFuncs 和 generatedConversionFuncs 找到转换函数，并执行
 	if fn, ok := c.conversionFuncs.untyped[pair]; ok {
 		return fn(src, dest, scope)
 	}
@@ -514,6 +521,7 @@ func (c *Converter) doConversion(src, dest interface{}, flags FieldMatchingFlags
 	// Leave something on the stack, so that calls to struct tag getters never fail.
 	scope.srcStack.push(scopeStackElem{})
 	scope.destStack.push(scopeStackElem{})
+	// 执行传入的转换函数
 	return f(sv, dv, scope)
 }
 
