@@ -229,12 +229,13 @@ func (o *CreateOptions) RunCreate(f cmdutil.Factory, cmd *cobra.Command) error {
 		return err
 	}
 
+	// 实例化builder
 	r := f.NewBuilder().
 		Unstructured().
 		Schema(schema).
 		ContinueOnError().
 		NamespaceParam(cmdNamespace).DefaultNamespace().
-		FilenameParam(enforceNamespace, &o.FilenameOptions).
+		FilenameParam(enforceNamespace, &o.FilenameOptions). // 识别命令传入方式：1.stdin 2. 本地文件 3. 网络文件
 		LabelSelectorParam(o.Selector).
 		Flatten().
 		Do()

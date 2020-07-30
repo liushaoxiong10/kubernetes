@@ -446,6 +446,7 @@ func NewKubectlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 
 	cmds.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 
+	// 参数初始化
 	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
 
 	// Sending in 'nil' for the getLanguageFn() results in using
@@ -460,80 +461,126 @@ func NewKubectlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 
 	ioStreams := genericclioptions.IOStreams{In: in, Out: out, ErrOut: err}
 
+	// 命令初始化
 	groups := templates.CommandGroups{
 		{
+			// 基础命令（初级)
 			Message: "Basic Commands (Beginner):",
 			Commands: []*cobra.Command{
+				// create 通过json/yaml文件或标准输入创建一个资源对象，支持很多子命令，例如namespace，pod，service等
 				create.NewCmdCreate(f, ioStreams),
+				// expose 将json/yaml文件中定义的资源对象的端口暴露给新的service资源对象
 				expose.NewCmdExposeService(f, ioStreams),
+				// run 创建并运行一个或多个容器镜像
 				run.NewCmdRun(f, ioStreams),
+				// set 配置资源对象，设置特定功能
 				set.NewCmdSet(f, ioStreams),
 			},
 		},
 		{
+			// 基础命令（中级）
 			Message: "Basic Commands (Intermediate):",
 			Commands: []*cobra.Command{
+				// explain 查看资源对象详细信息
 				explain.NewCmdExplain("kubectl", f, ioStreams),
+				// get 获取一个或多个资源对象的信息
 				get.NewCmdGet("kubectl", f, ioStreams),
+				// edit 使用默认编辑器编辑定义的资源对象
 				edit.NewCmdEdit(f, ioStreams),
+				// delete 通过json/yaml文件、标准输入、资源名称或者标签选择器来删除资源
 				delete.NewCmdDelete(f, ioStreams),
 			},
 		},
 		{
+			// 部署命令
 			Message: "Deploy Commands:",
 			Commands: []*cobra.Command{
+				// rollout 管理资源对象的部署
 				rollout.NewCmdRollout(f, ioStreams),
+				// rolling-update 使用RC（ReplicationController)进行滚动更新
 				rollingupdate.NewCmdRollingUpdate(f, ioStreams),
+				// scale 扩容或缩容Deployment、ReplicateSet、ReplicationController等
 				scale.NewCmdScale(f, ioStreams),
+				// autoscale 自动设置在kubernetes系统中运行的Pod数量（水平自动伸缩）
 				autoscale.NewCmdAutoscale(f, ioStreams),
 			},
 		},
 		{
+			// 集群管理命令
 			Message: "Cluster Management Commands:",
 			Commands: []*cobra.Command{
+				// certificate 修改证书资源对象
 				certificates.NewCmdCertificate(f, ioStreams),
+				// cluster-info 查看集群信息
 				clusterinfo.NewCmdClusterInfo(f, ioStreams),
+				// top 显示资源（CPU、内存、存储）使用情况
 				top.NewCmdTop(f, ioStreams),
+				// cordon 将指定节点标记为不可调度
 				drain.NewCmdCordon(f, ioStreams),
+				// uncordon 将指定节点标记为可调度
 				drain.NewCmdUncordon(f, ioStreams),
+				// drain 安全的驱逐指定节点的所有Pod
 				drain.NewCmdDrain(f, ioStreams),
+				// taint 将一个或多个节点设置为污点
 				taint.NewCmdTaint(f, ioStreams),
 			},
 		},
 		{
+			// 故障排查，调试命令
 			Message: "Troubleshooting and Debugging Commands:",
 			Commands: []*cobra.Command{
+				// describe 显示一个或多个资源对象的详细信息
 				describe.NewCmdDescribe("kubectl", f, ioStreams),
+				// 输出Pod资源对象中一个容器的日志
 				logs.NewCmdLogs(f, ioStreams),
+				// attach 连接到一个正在运行的容器
 				attach.NewCmdAttach(f, ioStreams),
+				// exec 在指定的容器内执行命令
 				cmdexec.NewCmdExec(f, ioStreams),
+				// port-forward 将本机指定端口映射到Pod资源对象的端口
 				portforward.NewCmdPortForward(f, ioStreams),
+				// proxy 运行一个 proxy 到 Kubernetes API server
 				proxy.NewCmdProxy(f, ioStreams),
+				// cp 用于Pod和主机交换文件
 				cp.NewCmdCp(f, ioStreams),
+				// auth 检查验证
 				auth.NewCmdAuth(f, ioStreams),
 			},
 		},
 		{
+			// 高级命令
 			Message: "Advanced Commands:",
 			Commands: []*cobra.Command{
+				// diff 对比本地Json/Yaml文件与kube-apiserver中运行的配置文件是否有差异
 				diff.NewCmdDiff(f, ioStreams),
+				// apply 通过JSON/Yaml 文件、标准输入对资源对象进行配置更新
 				apply.NewCmdApply("kubectl", f, ioStreams),
+				// patch 通过patch方式修改资源对象字段
 				patch.NewCmdPatch(f, ioStreams),
+				// replace 通过Json/Yaml 文件或标准输入来替换资源对象
 				replace.NewCmdReplace(f, ioStreams),
+				// wait 在一个或多个资源上等待条件达成
 				wait.NewCmdWait(f, ioStreams),
+				// convert 转换Json/Yaml 文件为不同的资源版本
 				convert.NewCmdConvert(f, ioStreams),
+				// kustomize 定制kubernetes配置
 				kustomize.NewCmdKustomize(ioStreams),
 			},
 		},
 		{
+			// 设置命令
 			Message: "Settings Commands:",
 			Commands: []*cobra.Command{
+				// label 增删改资源标签
 				label.NewCmdLabel(f, ioStreams),
+				// annotate 更新一个或多个资源对象的注释信息
 				annotate.NewCmdAnnotate("kubectl", f, ioStreams),
+				// 命令行自动补全
 				completion.NewCmdCompletion(ioStreams.Out, ""),
 			},
 		},
 	}
+	// 添加到子命令
 	groups.Add(cmds)
 
 	filters := []string{"options"}
@@ -559,11 +606,17 @@ func NewKubectlCommand(in io.Reader, out, err io.Writer) *cobra.Command {
 	}
 
 	cmds.AddCommand(alpha)
+	// config 管理kubeconfig配置文件
 	cmds.AddCommand(cmdconfig.NewCmdConfig(f, clientcmd.NewDefaultPathOptions(), ioStreams))
+	// plugin 运行命令插件功能
 	cmds.AddCommand(plugin.NewCmdPlugin(f, ioStreams))
+	// version 查看客户端和服务端的系统版本信息
 	cmds.AddCommand(version.NewCmdVersion(f, ioStreams))
+	// api-versions 列出当前kubernetes系统支持的资源组和资源版本，表现形式为 group/version
 	cmds.AddCommand(apiresources.NewCmdAPIVersions(f, ioStreams))
+	// api-resources 列出当前系统支持的Resource资源列表
 	cmds.AddCommand(apiresources.NewCmdAPIResources(f, ioStreams))
+	// options 查看支持的参数列表
 	cmds.AddCommand(options.NewCmdOptions(ioStreams.Out))
 
 	return cmds

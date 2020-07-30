@@ -223,8 +223,10 @@ func (b *Builder) FilenameParam(enforceNamespace bool, filenameOptions *Filename
 	for _, s := range paths {
 		switch {
 		case s == "-":
+			// stdin 输入， cat a.yaml| kubectl create -f -
 			b.Stdin()
 		case strings.Index(s, "http://") == 0 || strings.Index(s, "https://") == 0:
+			// 网络文件， kubectl create -f http://host/a.yaml
 			url, err := url.Parse(s)
 			if err != nil {
 				b.errs = append(b.errs, fmt.Errorf("the URL passed to filename %q is not valid: %v", s, err))
@@ -232,6 +234,7 @@ func (b *Builder) FilenameParam(enforceNamespace bool, filenameOptions *Filename
 			}
 			b.URL(defaultHttpGetAttempts, url)
 		default:
+			// 本地文件, kubectl create -f a.yaml
 			if !recursive {
 				b.singleItemImplied = true
 			}
@@ -1089,6 +1092,8 @@ func (b *Builder) visitByPaths() *Result {
 // The visitor will respect the error behavior specified by ContinueOnError. Note that stream
 // inputs are consumed by the first execution - use Infos() or Object() on the Result to capture a list
 // for further iteration.
+// 返回result对象，result中的info字段保存了RESTClient和apiserver交互的结果
+// 可以通过Result对象的Infos或者Object方法来获取执行结果
 func (b *Builder) Do() *Result {
 	r := b.visitorResult()
 	r.mapper = b.Mapper()

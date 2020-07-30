@@ -184,6 +184,7 @@ func (i *Info) ResourceMapping() *meta.RESTMapping {
 
 // VisitorList implements Visit for the sub visitors it contains. The first error
 // returned from a child Visitor will terminate iteration.
+// 当遍历执行Visitor时，如果遇到错误，则立刻返回
 type VisitorList []Visitor
 
 // Visit implements Visitor
@@ -198,6 +199,7 @@ func (l VisitorList) Visit(fn VisitorFunc) error {
 
 // EagerVisitorList implements Visit for the sub visitors it contains. All errors
 // will be captured and returned at the end of iteration.
+// 当遍历执行Visitor时，如果遇到错误，则保留错误信息，继续遍历执行下一个Visitor，最后一起返回所有错误
 type EagerVisitorList []Visitor
 
 // Visit implements Visitor, and gathers errors that occur during processing until
@@ -233,6 +235,9 @@ func ValidateSchema(data []byte, schema ContentValidator) error {
 
 // URLVisitor downloads the contents of a URL, and if successful, returns
 // an info object representing the downloaded object.
+// 资源对象描述文件通过网络方式指定（如kubectl create -f https://xxx/a.yaml）
+// 该Visitor会下载资源对象描述文件，并对内容格式进行检查
+// 通过StreamVisitor 将其转化为Info对象
 type URLVisitor struct {
 	URL *url.URL
 	*StreamVisitor
@@ -301,6 +306,9 @@ func httpgetImpl(url string) (int, string, io.ReadCloser, error) {
 
 // DecoratedVisitor will invoke the decorators in order prior to invoking the visitor function
 // passed to Visit. An error will terminate the visit.
+// 提供多种装饰器（decorator）函数，通过遍历自身的装饰器函数，对Info和error进行处理
+// 如果任意一个装饰器函数报错，则终止并返回
+// 装饰器函数通过NewDecoratedVisitor进行注册，例如SetNamespace函数
 type DecoratedVisitor struct {
 	visitor    Visitor
 	decorators []VisitorFunc
@@ -334,6 +342,8 @@ func (v DecoratedVisitor) Visit(fn VisitorFunc) error {
 // ContinueOnErrorVisitor visits each item and, if an error occurs on
 // any individual item, returns an aggregate error after all items
 // are visited.
+// 在执行多层Visitor匿名函数时，如果发生一个错误或多个错误，则不会返回和退出
+// 而是将执行过程中所产生的错误收集到error数组中，并聚合成一条error信息返回
 type ContinueOnErrorVisitor struct {
 	Visitor
 }
@@ -371,6 +381,7 @@ func (v ContinueOnErrorVisitor) Visit(fn VisitorFunc) error {
 // contains an object that does not have a registered client or resource) will terminate
 // the visit.
 // TODO: allow errors to be aggregated?
+// 将通用资源类型（runtime.Object）转换为Info对象
 type FlattenListVisitor struct {
 	visitor Visitor
 	typer   runtime.ObjectTyper
@@ -495,6 +506,8 @@ func ExpandPathsToFileVisitors(mapper *mapper, paths string, recursive bool, ext
 }
 
 // FileVisitor is wrapping around a StreamVisitor, to handle open/close files
+// 资源对象描述文件通过本地方式指定（例如kubectl create -f a.yaml）
+// 该Visitor会访问资源对象描述文件，并通过 StreamVisitor 将其转化为Info
 type FileVisitor struct {
 	Path string
 	*StreamVisitor
@@ -523,6 +536,7 @@ func (v *FileVisitor) Visit(fn VisitorFunc) error {
 }
 
 // KustomizeVisitor is wrapper around a StreamVisitor, to handle Kustomization directories
+// 从kustomize中获取资源对象描述文件，然后把它交给 StreamVisitor 并转换为Info
 type KustomizeVisitor struct {
 	Path string
 	*StreamVisitor
@@ -544,6 +558,8 @@ func (v *KustomizeVisitor) Visit(fn VisitorFunc) error {
 // visited once.
 // TODO: depends on objects being in JSON format before being passed to decode - need to implement
 // a stream decoder method on runtime.Codec to properly handle this.
+// 从 io.Reader 中获取数据流，将其转换成json格式，通过 Schema 检查
+// 最后将其数据转换成Info对象
 type StreamVisitor struct {
 	io.Reader
 	*mapper
@@ -605,6 +621,7 @@ func UpdateObjectNamespace(info *Info, err error) error {
 }
 
 // FilterNamespace omits the namespace if the object is not namespace scoped
+// 如果 info 对象不在命名空间范围内，会忽略命名空间
 func FilterNamespace(info *Info, err error) error {
 	if err != nil {
 		return err
@@ -618,6 +635,7 @@ func FilterNamespace(info *Info, err error) error {
 
 // SetNamespace ensures that every Info object visited will have a namespace
 // set. If info.Object is set, it will be mutated as well.
+// 设置命名空间，确保每个 info 对象都有命名空间
 func SetNamespace(namespace string) VisitorFunc {
 	return func(info *Info, err error) error {
 		if err != nil {
@@ -638,6 +656,7 @@ func SetNamespace(namespace string) VisitorFunc {
 // Info object, or if the namespace is set and does not match the provided
 // value, returns an error. This is intended to guard against administrators
 // accidentally operating on resources outside their namespace.
+// 设置命名空间，并检查资源对象描述文件中提供命名空间与命令行参数是否相等，如果不相等则返回错误
 func RequireNamespace(namespace string) VisitorFunc {
 	return func(info *Info, err error) error {
 		if err != nil {
@@ -660,6 +679,8 @@ func RequireNamespace(namespace string) VisitorFunc {
 
 // RetrieveLatest updates the Object on each Info by invoking a standard client
 // Get.
+// 如果 info.Object 为空，则根据 info 的 Namespace 和 Name 等字段调用 Helper 获取 obj
+// 并更新 info 的 Object 字段
 func RetrieveLatest(info *Info, err error) error {
 	if err != nil {
 		return err
@@ -699,6 +720,8 @@ func CreateAndRefresh(info *Info) error {
 
 type FilterFunc func(info *Info, err error) (bool, error)
 
+// 通过 filters 函数检查 Info 是否满足某些条件，如果满足条件，则往下执行，否则返回error信息
+// filters 函数通过 NewFilteredVisitor 进行注册
 type FilteredVisitor struct {
 	visitor Visitor
 	filters []FilterFunc

@@ -41,16 +41,20 @@ type Factory interface {
 	genericclioptions.RESTClientGetter
 
 	// DynamicClient returns a dynamic client ready for use
+	// 动态客户端
 	DynamicClient() (dynamic.Interface, error)
 
 	// KubernetesClientSet gives you back an external clientset
+	// clientSet客户端
 	KubernetesClientSet() (*kubernetes.Clientset, error)
 
 	// Returns a RESTClient for accessing Kubernetes resources or an error.
+	// RESTClient 客户端
 	RESTClient() (*restclient.RESTClient, error)
 
 	// NewBuilder returns an object that assists in loading objects from both disk and the server
 	// and which implements the common patterns for CLI interactions with generic resources.
+	// 实例化build，将用于命令行获取的阐述转换为资源对象
 	NewBuilder() *resource.Builder
 
 	// Returns a RESTClient for working with the specified RESTMapping or an error. This is intended
@@ -60,6 +64,7 @@ type Factory interface {
 	UnstructuredClientForMapping(mapping *meta.RESTMapping) (resource.RESTClient, error)
 
 	// Returns a schema that can validate objects stored on disk.
+	// 验证资源对象
 	Validator(validate bool) (validation.Schema, error)
 	// OpenAPISchema returns the schema openapi schema definition
 	OpenAPISchema() (openapi.Resources, error)
