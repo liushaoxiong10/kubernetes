@@ -59,6 +59,7 @@ type sharedInformerFactory struct {
 	defaultResync    time.Duration
 	customResync     map[reflect.Type]time.Duration
 
+	// 资源共享
 	informers map[reflect.Type]cache.SharedIndexInformer
 	// startedInformers is used for tracking which informers have been started.
 	// This allows Start() to be called multiple times safely.

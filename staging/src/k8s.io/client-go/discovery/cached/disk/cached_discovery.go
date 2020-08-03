@@ -61,6 +61,7 @@ type CachedDiscoveryClient struct {
 var _ discovery.CachedDiscoveryInterface = &CachedDiscoveryClient{}
 
 // ServerResourcesForGroupVersion returns the supported resources for a group and version.
+// 缓存
 func (d *CachedDiscoveryClient) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
 	filename := filepath.Join(d.cacheDirectory, groupVersion, "serverresources.json")
 	cachedBytes, err := d.getCachedFile(filename)

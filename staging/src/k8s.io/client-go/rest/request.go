@@ -705,6 +705,7 @@ func (r *Request) request(fn func(*http.Request, *http.Response)) error {
 	retries := 0
 	for {
 		url := r.URL().String()
+		// 标准http client
 		req, err := http.NewRequest(r.verb, url, r.body)
 		if err != nil {
 			return err

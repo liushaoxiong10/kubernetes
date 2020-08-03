@@ -43,6 +43,7 @@ type Indexer interface {
 }
 
 // IndexFunc knows how to provide an indexed value for an object.
+// 索引器函数，定义为接收一个资源对象，返回检索列表
 type IndexFunc func(obj interface{}) ([]string, error)
 
 // IndexFuncToKeyFuncAdapter adapts an indexFunc to a keyFunc.  This is only useful if your index function returns
@@ -78,10 +79,13 @@ func MetaNamespaceIndexFunc(obj interface{}) ([]string, error) {
 }
 
 // Index maps the indexed value to a set of keys in the store that match on that value
+// 存储缓存数据，结构为 k/v
 type Index map[string]sets.String
 
 // Indexers maps a name to a IndexFunc
+// 存储索引器， key 为索引名称，value 为索引器的实现函数
 type Indexers map[string]IndexFunc
 
 // Indices maps a name to an Index
+// 存储缓存器，key 为缓存器名称，value 为缓存数据
 type Indices map[string]Index
