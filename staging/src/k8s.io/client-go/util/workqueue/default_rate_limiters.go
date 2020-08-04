@@ -24,13 +24,17 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// 限速队列
 type RateLimiter interface {
 	// When gets an item and gets to decide how long that item should wait
+	// 获取指定元素应该等待的时间
 	When(item interface{}) time.Duration
 	// Forget indicates that an item is finished being retried.  Doesn't matter whether its for perm failing
 	// or for success, we'll stop tracking it
+	// 释放指定元素，清空该元素的排队数
 	Forget(item interface{})
 	// NumRequeues returns back how many failures the item has had
+	// 获取指定元素的排队数
 	NumRequeues(item interface{}) int
 }
 
@@ -45,6 +49,7 @@ func DefaultControllerRateLimiter() RateLimiter {
 }
 
 // BucketRateLimiter adapts a standard bucket to the workqueue ratelimiter API
+// 令牌桶算法
 type BucketRateLimiter struct {
 	*rate.Limiter
 }
@@ -64,12 +69,18 @@ func (r *BucketRateLimiter) Forget(item interface{}) {
 
 // ItemExponentialFailureRateLimiter does a simple baseDelay*2^<num-failures> limit
 // dealing with max failures and expiration are up to the caller
+// 排队指数算法
+// 将相同的元素的排队数作为指数，排队数增大，速率限速呈指数级增长
+// 但最大值不会超过maxDelay
 type ItemExponentialFailureRateLimiter struct {
 	failuresLock sync.Mutex
-	failures     map[interface{}]int
+	// 统计元素排队数
+	failures map[interface{}]int
 
+	// 最初的限速单位，默认5ms
 	baseDelay time.Duration
-	maxDelay  time.Duration
+	// 最大限速单位，默认1000s
+	maxDelay time.Duration
 }
 
 var _ RateLimiter = &ItemExponentialFailureRateLimiter{}
@@ -122,13 +133,20 @@ func (r *ItemExponentialFailureRateLimiter) Forget(item interface{}) {
 }
 
 // ItemFastSlowRateLimiter does a quick retry for a certain number of attempts, then a slow retry after that
+// 计数器算法
+// 限制一段时间内允许通过的元素数量
+// 例如：fast 为5ms， slow为 10s，maxFastAttempts 为3
+// 在一个限速周期内，插入4个元素，前3个使用 fast，第四个就是用slow
 type ItemFastSlowRateLimiter struct {
 	failuresLock sync.Mutex
-	failures     map[interface{}]int
+	// 统计元素排队数
+	failures map[interface{}]int
 
+	// 控制从 fast 速率转换到 slow 速率
 	maxFastAttempts int
-	fastDelay       time.Duration
-	slowDelay       time.Duration
+	// 速率
+	fastDelay time.Duration
+	slowDelay time.Duration
 }
 
 var _ RateLimiter = &ItemFastSlowRateLimiter{}
@@ -172,6 +190,8 @@ func (r *ItemFastSlowRateLimiter) Forget(item interface{}) {
 // MaxOfRateLimiter calls every RateLimiter and returns the worst case response
 // When used with a token bucket limiter, the burst could be apparently exceeded in cases where particular items
 // were separately delayed a longer time.
+// 混合模式
+// 多种算法同时生效
 type MaxOfRateLimiter struct {
 	limiters []RateLimiter
 }

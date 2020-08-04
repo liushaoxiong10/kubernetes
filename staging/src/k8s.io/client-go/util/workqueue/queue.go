@@ -24,11 +24,17 @@ import (
 )
 
 type Interface interface {
+	// 给队列添加元素（item）
 	Add(item interface{})
+	// 返回当前队列长度
 	Len() int
+	// 获取队列头部的一个元素
 	Get() (item interface{}, shutdown bool)
+	// 标记队列中改元素已被处理
 	Done(item interface{})
+	// 关闭队列
 	ShutDown()
+	// 查询队列是否正在关闭
 	ShuttingDown() bool
 }
 
@@ -62,19 +68,24 @@ func newQueue(c clock.Clock, metrics queueMetrics, updatePeriod time.Duration) *
 const defaultUnfinishedWorkUpdatePeriod = 500 * time.Millisecond
 
 // Type is a work queue (see the package comment).
+// FIFO 队列
 type Type struct {
 	// queue defines the order in which we will work on items. Every
 	// element of queue should be in the dirty set and not in the
 	// processing set.
+	// 实际存储元素
+	// slice 保证有序
 	queue []t
 
 	// dirty defines all of the items that need to be processed.
+	// 去重，保证元素只被添加了一次
 	dirty set
 
 	// Things that are currently being processed are in the processing set.
 	// These things may be simultaneously in the dirty set. When we finish
 	// processing something and remove it from this set, we'll check if
 	// it's in the dirty set, and if so, add it to the queue.
+	// 标记元素是否正在被处理
 	processing set
 
 	cond *sync.Cond

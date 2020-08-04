@@ -26,9 +26,11 @@ import (
 
 // DelayingInterface is an Interface that can Add an item at a later time. This makes it easier to
 // requeue items after failures without ending up in a hot-loop.
+// 延时队列
 type DelayingInterface interface {
 	Interface
 	// AddAfter adds an item to the workqueue after the indicated duration has passed
+	// 延时多久后插入元素
 	AddAfter(item interface{}, duration time.Duration)
 }
 
@@ -169,6 +171,7 @@ func (q *delayingType) AddAfter(item interface{}, duration time.Duration) {
 const maxWait = 10 * time.Second
 
 // waitingLoop runs until the workqueue is shutdown and keeps a check on the list of items to be added.
+// 延时队列消费
 func (q *delayingType) waitingLoop() {
 	defer utilruntime.HandleCrash()
 
@@ -217,6 +220,7 @@ func (q *delayingType) waitingLoop() {
 			// continue the loop, which will add ready items
 
 		case waitEntry := <-q.waitingForAddCh:
+			// 获取延时队列的元素
 			if waitEntry.readyAt.After(q.clock.Now()) {
 				insert(waitingForQueue, waitingEntryByData, waitEntry)
 			} else {
@@ -227,6 +231,7 @@ func (q *delayingType) waitingLoop() {
 			for !drained {
 				select {
 				case waitEntry := <-q.waitingForAddCh:
+					// 判断是否到了延时时间
 					if waitEntry.readyAt.After(q.clock.Now()) {
 						insert(waitingForQueue, waitingEntryByData, waitEntry)
 					} else {
