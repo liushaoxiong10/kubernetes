@@ -19,7 +19,7 @@ package v1
 import (
 	"fmt"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,6 +45,7 @@ type EventExpansion interface {
 // or an error. The namespace to create the event within is deduced from the
 // event; it must either match this event client's namespace, or this event
 // client must have been created with the "" namespace.
+// 通过RESTClient 发送POST请求，将事件发送至kubernetes API Server,最终存储在etcd
 func (e *events) CreateWithEventNamespace(event *v1.Event) (*v1.Event, error) {
 	if e.ns != "" && event.Namespace != e.ns {
 		return nil, fmt.Errorf("can't create an event with namespace '%v' in namespace '%v'", event.Namespace, e.ns)

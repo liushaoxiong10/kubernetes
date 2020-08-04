@@ -4620,8 +4620,10 @@ type EventSource struct {
 // Valid values for event types (new types could be added in future)
 const (
 	// Information only and will not cause any problems
+	// 正常事件
 	EventTypeNormal string = "Normal"
 	// These events are to warn that something might go wrong
+	// 警告事件
 	EventTypeWarning string = "Warning"
 )
 
@@ -4629,6 +4631,7 @@ const (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Event is a report of an event somewhere in the cluster.
+// Event 资源数据
 type Event struct {
 	metav1.TypeMeta `json:",inline"`
 	// Standard object's metadata.

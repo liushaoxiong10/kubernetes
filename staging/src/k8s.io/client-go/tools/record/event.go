@@ -51,6 +51,7 @@ type EventSink interface {
 }
 
 // EventRecorder knows how to record events on behalf of an EventSource.
+// 事件生产者（事件记录器）
 type EventRecorder interface {
 	// Event constructs an event from the given information and puts it in the queue for sending.
 	// 'object' is the object this event is about. Event will make a reference-- or you may also
@@ -63,19 +64,24 @@ type EventRecorder interface {
 	// 'message' is intended to be human readable.
 	//
 	// The resulting event will be created in the same namespace as the reference object.
+	// 对刚发生的事件进行记录
 	Event(object runtime.Object, eventtype, reason, message string)
 
 	// Eventf is just like Event, but with Sprintf for the message field.
+	// 使用fmt.Sprintf()格式化输出
 	Eventf(object runtime.Object, eventtype, reason, messageFmt string, args ...interface{})
 
 	// PastEventf is just like Eventf, but with an option to specify the event's 'timestamp' field.
+	// 允许自定义事件发生的时间，以记录已经发生过的消息
 	PastEventf(object runtime.Object, timestamp metav1.Time, eventtype, reason, messageFmt string, args ...interface{})
 
 	// AnnotatedEventf is just like eventf, but with annotations attached
+	// 功能和Eventf一样，但是附加了注释字段
 	AnnotatedEventf(object runtime.Object, annotations map[string]string, eventtype, reason, messageFmt string, args ...interface{})
 }
 
 // EventBroadcaster knows how to receive events and send them to any EventSink, watcher, or log.
+// 事件消费者（事件广播器）
 type EventBroadcaster interface {
 	// StartEventWatcher starts sending events received from this EventBroadcaster to the given
 	// event handler function. The return value can be ignored or used to stop recording, if
@@ -96,6 +102,7 @@ type EventBroadcaster interface {
 }
 
 // Creates a new event broadcaster.
+// 实例化broadcaster
 func NewBroadcaster() EventBroadcaster {
 	return &eventBroadcasterImpl{watch.NewBroadcaster(maxQueuedEvents, watch.DropIfChannelFull), defaultSleepDuration}
 }

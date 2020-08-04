@@ -72,6 +72,7 @@ func NewBroadcaster(queueLength int, fullChannelBehavior FullChannelBehavior) *B
 		fullChannelBehavior: fullChannelBehavior,
 	}
 	m.distributing.Add(1)
+	// 监控 incoming
 	go m.loop()
 	return m
 }
@@ -186,6 +187,7 @@ func (m *Broadcaster) closeAll() {
 
 // Action distributes the given event among all watchers.
 func (m *Broadcaster) Action(action EventType, obj runtime.Object) {
+	// 事件生成
 	m.incoming <- Event{action, obj}
 }
 
@@ -209,6 +211,7 @@ func (m *Broadcaster) loop() {
 			event.Object.(functionFakeRuntimeObject)()
 			continue
 		}
+		// 分发时间
 		m.distribute(event)
 	}
 	m.closeAll()
@@ -216,10 +219,12 @@ func (m *Broadcaster) loop() {
 }
 
 // distribute sends event to all watchers. Blocking.
+// 发生事件到所有watch
 func (m *Broadcaster) distribute(event Event) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if m.fullChannelBehavior == DropIfChannelFull {
+		// 非阻塞分发
 		for _, w := range m.watchers {
 			select {
 			case w.result <- event:
@@ -228,6 +233,7 @@ func (m *Broadcaster) distribute(event Event) {
 			}
 		}
 	} else {
+		// 阻塞分发
 		for _, w := range m.watchers {
 			select {
 			case w.result <- event:
@@ -238,6 +244,7 @@ func (m *Broadcaster) distribute(event Event) {
 }
 
 // broadcasterWatcher handles a single watcher of a broadcaster
+// 事件处理方式
 type broadcasterWatcher struct {
 	result  chan Event
 	stopped chan struct{}
