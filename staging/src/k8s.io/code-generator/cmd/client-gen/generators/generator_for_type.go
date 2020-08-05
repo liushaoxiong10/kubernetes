@@ -181,6 +181,7 @@ func (g *genClientForType) GenerateType(c *generator.Context, t *types.Type, w i
 		return sw.Error()
 	}
 
+	// 为资源生成Get函数
 	if tags.HasVerb("get") {
 		sw.Do(getTemplate, m)
 	}
@@ -439,6 +440,7 @@ func (c *$.type|privatePlural$) Get(name string, options $.GetOptions|raw$) (res
 }
 `
 
+// get 函数模板
 var getSubresourceTemplate = `
 // Get takes name of the $.type|private$, and returns the corresponding $.resultType|raw$ object, and an error if there is any.
 func (c *$.type|privatePlural$) Get($.type|private$Name string, options $.GetOptions|raw$) (result *$.resultType|raw$, err error) {

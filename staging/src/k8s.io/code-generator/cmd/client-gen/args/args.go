@@ -71,9 +71,12 @@ func NewDefaults() (*args.GeneratorArgs, *CustomArgs) {
 
 func (ca *CustomArgs) AddFlags(fs *pflag.FlagSet, inputBase string) {
 	gvsBuilder := NewGroupVersionsBuilder(&ca.Groups)
+	// 输入源，client-gen 为其生成 clientSet 的资源组、资源版本。每个资源嘴都允许有一个资源版本
 	pflag.Var(NewGVPackagesValue(gvsBuilder, nil), "input", "group/versions that client-gen will generate clients for. At most one version per group is allowed. Specified in the format \"group1/version1,group2/version2...\".")
 	pflag.Var(NewGVTypesValue(&ca.IncludedTypesOverrides, []string{}), "included-types-overrides", "list of group/version/type for which client should be generated. By default, client is generated for all types which have genclient in types.go. This overrides that. For each groupVersion in this list, only the types mentioned here will be included. The default check of genclient will be used for other group versions.")
+	// api资源组基本路径
 	pflag.Var(NewInputBasePathValue(gvsBuilder, inputBase), "input-base", "base path to look for the api group.")
+	// 生成的ClientSet包名称（默认为internalclientset）
 	pflag.StringVarP(&ca.ClientsetName, "clientset-name", "n", ca.ClientsetName, "the name of the generated clientset package.")
 	pflag.StringVarP(&ca.ClientsetAPIPath, "clientset-api-path", "", ca.ClientsetAPIPath, "the value of default API HTTP path, starting with / and without trailing /.")
 	pflag.BoolVar(&ca.ClientsetOnly, "clientset-only", ca.ClientsetOnly, "when set, client-gen only generates the clientset shell, without generating the individual typed clients")

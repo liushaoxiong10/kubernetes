@@ -54,8 +54,11 @@ func NewDefaults() (*args.GeneratorArgs, *CustomArgs) {
 // AddFlags add the generator flags to the flag set.
 func (ca *CustomArgs) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&ca.InternalClientSetPackage, "internal-clientset-package", ca.InternalClientSetPackage, "the full package name for the internal clientset to use")
+	// 依赖的 ClientSet 完整包路径
 	fs.StringVar(&ca.VersionedClientSetPackage, "versioned-clientset-package", ca.VersionedClientSetPackage, "the full package name for the versioned clientset to use")
+	// 依赖的 Listers 完整包路径
 	fs.StringVar(&ca.ListersPackage, "listers-package", ca.ListersPackage, "the full package name for the listers to use")
+	// 如果为 true ，则忽略 internalversion 和 externalversion 子目录
 	fs.BoolVar(&ca.SingleDirectory, "single-directory", ca.SingleDirectory, "if true, omit the intermediate \"internalversion\" and \"externalversions\" subdirectories")
 }
 

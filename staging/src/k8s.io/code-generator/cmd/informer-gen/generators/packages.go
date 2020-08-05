@@ -171,6 +171,11 @@ func Packages(context *generator.Context, arguments *args.GeneratorArgs) generat
 		var typesToGenerate []*types.Type
 		for _, t := range p.Types {
 			tags := util.MustParseClientGenTags(append(t.SecondClosestCommentLines, t.CommentLines...))
+			// 过滤条件
+			// 1. 资源拥有 // +genclient 标签
+			// 2. 资源没有 // +genclient:noVerbs 标签
+			// 3. 资源拥有 list 字段
+			// 4. 资源拥有 watch 字段
 			if !tags.GenerateClient || tags.NoVerbs || !tags.HasVerb("list") || !tags.HasVerb("watch") {
 				continue
 			}
