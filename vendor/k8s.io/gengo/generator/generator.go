@@ -85,6 +85,7 @@ type Packages []Package
 // You may have multiple generators for the same file.
 type Generator interface {
 	// The name of this generator. Will be included in generated comments.
+	// 生成器名称
 	Name() string
 
 	// Filter should return true if this generator cares about this type.
@@ -93,6 +94,7 @@ type Generator interface {
 	// Filter is called before any of the generator's other functions;
 	// subsequent calls will get a context with only the types that passed
 	// this filter.
+	// 类型过滤器
 	Filter(*Context, *types.Type) bool
 
 	// If this generator needs special namers, return them here. These will
@@ -102,29 +104,35 @@ type Generator interface {
 	// functions.
 	//
 	// A use case for this is to return a namer that tracks imports.
+	// 命名管理器，支持创建不同的类型名称
 	Namers(*Context) namer.NameSystems
 
 	// Init should write an init function, and any other content that's not
 	// generated per-type. (It's not intended for generator specific
 	// initialization! Do that when your Package constructs the
 	// Generators.)
+	// 代码生成器生成之前的初始化操作
 	Init(*Context, io.Writer) error
 
 	// Finalize should write finish up functions, and any other content that's not
 	// generated per-type.
+	// 代码生成器生成代码之后的收尾操作
 	Finalize(*Context, io.Writer) error
 
 	// PackageVars should emit an array of variable lines. They will be
 	// placed in a var ( ... ) block. There's no need to include a leading
 	// \t or trailing \n.
+	// 生成全局变量的代码块
 	PackageVars(*Context) []string
 
 	// PackageConsts should emit an array of constant lines. They will be
 	// placed in a const ( ... ) block. There's no need to include a leading
 	// \t or trailing \n.
+	// 生成常量代码块
 	PackageConsts(*Context) []string
 
 	// GenerateType should emit the code for a particular type.
+	// 生成代码块，根据传入的类型生成代码
 	GenerateType(*Context, *types.Type, io.Writer) error
 
 	// Imports should return a list of necessary imports. They will be
@@ -133,6 +141,7 @@ type Generator interface {
 	// imports in the format `name "path/to/pkg"`. Imports will be called
 	// after Init, PackageVars, PackageConsts, and GenerateType, to allow
 	// you to keep track of what imports you actually need.
+	// 获得需要生成的import代码块
 	Imports(*Context) []string
 
 	// Preferred file name of this generator, not including a path. It is
@@ -140,10 +149,12 @@ type Generator interface {
 	// up to you to make sure they don't have colliding import names.
 	// TODO: provide per-file import tracking, removing the requirement
 	// that generators coordinate..
+	// 生成的目标代码文件的全名
 	Filename() string
 
 	// A registered file type in the context to generate this file with. If
 	// the FileType is not found in the context, execution will stop.
+	// 生成代码文件的类型，一般为golang，也有protoidl、api-violation等代码文件
 	FileType() string
 }
 

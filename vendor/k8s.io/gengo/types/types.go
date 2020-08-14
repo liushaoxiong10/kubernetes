@@ -64,6 +64,7 @@ type Kind string
 
 const (
 	// Builtin is a primitive, like bool, string, int.
+	// 内置类型
 	Builtin Kind = "Builtin"
 	Struct  Kind = "Struct"
 	Map     Kind = "Map"
@@ -78,6 +79,7 @@ const (
 	// In the real go type system, Foo is a "Named" string; but to simplify
 	// generation, this type system will just say that Foo *is* a builtin.
 	// We then need "Alias" as a way for us to say that Bar *is* a Foo.
+	// 别名
 	Alias Kind = "Alias"
 
 	// Interface is any type that could have differing types at run time.
@@ -93,9 +95,12 @@ const (
 	// representing an actual Type, the type is a declaration of an instance of
 	// a type. E.g., a top-level function, variable, or constant. See the
 	// comment for Type.Name for more detail.
+	// 声明类型
 	DeclarationOf Kind = "DeclarationOf"
-	Unknown       Kind = ""
-	Unsupported   Kind = "Unsupported"
+	// 未知类型
+	Unknown Kind = ""
+	// 未支持的类型
+	Unsupported Kind = "Unsupported"
 
 	// Protobuf is protobuf type.
 	Protobuf Kind = "Protobuf"

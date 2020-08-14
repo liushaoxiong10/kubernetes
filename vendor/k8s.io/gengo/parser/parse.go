@@ -96,9 +96,10 @@ func New() *Builder {
 	// have non-CGo equivalents.
 	c.CgoEnabled = false
 	return &Builder{
-		context:               &c,
-		buildPackages:         map[string]*build.Package{},
-		typeCheckedPackages:   map[importPathString]*tc.Package{},
+		context:             &c,
+		buildPackages:       map[string]*build.Package{},
+		typeCheckedPackages: map[importPathString]*tc.Package{},
+		// 记录文件中的偏移量、类型、原始字面量及词法分析的数据结构及方法
 		fset:                  token.NewFileSet(),
 		parsed:                map[importPathString][]parsedFile{},
 		absPaths:              map[importPathString]string{},
@@ -180,6 +181,7 @@ func (b *Builder) addFile(pkgPath importPathString, path string, src []byte, use
 		}
 	}
 	klog.V(6).Infof("addFile %s %s", pkgPath, path)
+	// 解析 tokens ，获取抽象语法树
 	p, err := parser.ParseFile(b.fset, path, src, parser.DeclarationErrors|parser.ParseComments)
 	if err != nil {
 		return err
@@ -304,6 +306,7 @@ func (b *Builder) addDir(dir string, userRequested bool) error {
 		b.absPaths[pkgPath] = buildPkg.Dir
 	}
 
+	// 将目标文件加载内存，等待 lexer 词法分析下一步处理
 	for _, n := range buildPkg.GoFiles {
 		if !strings.HasSuffix(n, ".go") {
 			continue
@@ -419,6 +422,7 @@ func (b *Builder) typeCheckPackage(pkgPath importPathString) (*tc.Package, error
 			klog.V(2).Infof("type checker: %v\n", err)
 		},
 	}
+	// 类型检查
 	pkg, err := c.Check(string(pkgPath), b.fset, files, nil)
 	b.typeCheckedPackages[pkgPath] = pkg // record the result whether or not there was an error
 	return pkg, err
@@ -633,6 +637,7 @@ func (b *Builder) convertSignature(u types.Universe, t *tc.Signature) *types.Sig
 }
 
 // walkType adds the type, and any necessary child types.
+// 类型识别
 func (b *Builder) walkType(u types.Universe, useName *types.Name, in tc.Type) *types.Type {
 	// Most of the cases are underlying types of the named type.
 	name := tcNameToName(in.String())

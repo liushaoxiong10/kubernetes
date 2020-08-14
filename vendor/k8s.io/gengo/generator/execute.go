@@ -246,6 +246,7 @@ func (c *Context) ExecutePackage(outDir string, p Package) error {
 			}
 		}
 
+		// 生成 vars 全局变量代码块
 		if vars := g.PackageVars(genContext); len(vars) > 0 {
 			addIndentHeaderComment(&f.Vars, "Package-wide variables from generator %q.", g.Name())
 			for _, v := range vars {
@@ -254,6 +255,7 @@ func (c *Context) ExecutePackage(outDir string, p Package) error {
 				}
 			}
 		}
+		// 生成 consts 常量代码块
 		if consts := g.PackageConsts(genContext); len(consts) > 0 {
 			addIndentHeaderComment(&f.Consts, "Package-wide consts from generator %q.", g.Name())
 			for _, v := range consts {
@@ -262,9 +264,11 @@ func (c *Context) ExecutePackage(outDir string, p Package) error {
 				}
 			}
 		}
+		// 生成 body 代码块
 		if err := genContext.executeBody(&f.Body, g); err != nil {
 			return err
 		}
+		// 生成 imports 代码块
 		if imports := g.Imports(genContext); len(imports) > 0 {
 			for _, i := range imports {
 				f.Imports[i] = struct{}{}
@@ -283,6 +287,7 @@ func (c *Context) ExecutePackage(outDir string, p Package) error {
 		if c.Verify {
 			err = assembler.VerifyFile(f, finalPath)
 		} else {
+			// 写入文件
 			err = assembler.AssembleFile(f, finalPath)
 		}
 		if err != nil {

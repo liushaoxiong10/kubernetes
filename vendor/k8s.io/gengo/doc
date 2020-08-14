@@ -1,0 +1,19 @@
+# 目录结构
+args:  代码生成器通用flags参数
+examples: 包含deepcopy-gen、defaulter-gen、import-boss、set-gen等代码生成器的生成逻辑
+generator: 代码生成器通用接口Generator 
+namer: 命名管理，支持创建不通类型的名称。例如根据类型生成名称，定义type foo string，能够生成
+       func FooPrinter(f *foo){
+           Print (string (*f))
+       }
+parser: 代码解析器，用来构造抽象语法树
+types: 类型系统，用于数据类型的定义及类型检查算法的实现
+
+
+# 生成原理
+1. Gather the info: 收集Go语言源码文件信息及内容
+2. Lexer/Parser: 通过Lexer词法分析器，进行一系列的词法分析
+3. AST Generator: 生成抽象语法树
+4. Type Checker: 对抽象语法树进行类型检查
+5. Code Generation: 生成代码，将抽象语法树转化为机器代码
+
