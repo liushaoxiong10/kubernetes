@@ -72,6 +72,8 @@ func NewDeltaFIFO(keyFunc KeyFunc, knownObjects KeyListerGetter) *DeltaFIFO {
 // DeltaFIFO is a producer-consumer queue, where a Reflector is
 // intended to be the producer, and the consumer is whatever calls
 // the Pop() method.
+// DeltaFIFO是一个生产者－消费者队列，其中应将Reflector用作生产者，
+// 而消费者则是调用Pop（）方法的对象。
 //
 // DeltaFIFO solves this use case:
 //  * You want to process every object change (delta) at most once.
@@ -93,6 +95,8 @@ func NewDeltaFIFO(keyFunc KeyFunc, knownObjects KeyListerGetter) *DeltaFIFO {
 // items have been deleted when Replace() or Delete() are called. The deleted
 // object will be included in the DeleteFinalStateUnknown markers. These objects
 // could be stale.
+// Delta 是一个资源对象存储，可以保存资源对象的操作类型，如 Added、Updated、Deleted、Sync等。
+// FIFO 是一个先进先出的队列，具有队列操作的基本方法，如 Add、Update、Delete、List、Pop、Close等。
 type DeltaFIFO struct {
 	// lock/cond protects access to 'items' and 'queue'.
 	lock sync.RWMutex
@@ -101,7 +105,9 @@ type DeltaFIFO struct {
 	// We depend on the property that items in the set are in
 	// the queue and vice versa, and that all Deltas in this
 	// map have at least one Delta.
+	// 对象的 Deltas 数组
 	items map[string]Deltas
+	// 存储资源对象的key，  key通过 KeyOf 函数计算得到
 	queue []string
 
 	// populated is true if the first batch of items inserted by Replace() has been populated
@@ -147,6 +153,7 @@ func (f *DeltaFIFO) Close() {
 
 // KeyOf exposes f's keyFunc, but also detects the key of a Deltas object or
 // DeletedFinalStateUnknown objects.
+// 生成资源对象的key
 func (f *DeltaFIFO) KeyOf(obj interface{}) (string, error) {
 	if d, ok := obj.(Deltas); ok {
 		if len(d) == 0 {
@@ -245,6 +252,7 @@ func (f *DeltaFIFO) AddIfNotPresent(obj interface{}) error {
 
 // addIfNotPresent inserts deltas under id if it does not exist, and assumes the caller
 // already holds the fifo lock.
+// 对象不存在时，将对象返回队列，调用方需要先取锁
 func (f *DeltaFIFO) addIfNotPresent(id string, deltas Deltas) {
 	f.populated = true
 	if _, exists := f.items[id]; exists {
@@ -258,6 +266,7 @@ func (f *DeltaFIFO) addIfNotPresent(id string, deltas Deltas) {
 
 // re-listing and watching can deliver the same update multiple times in any
 // order. This will combine the most recent two deltas if they are the same.
+// 去掉重复事件
 func dedupDeltas(deltas Deltas) Deltas {
 	n := len(deltas)
 	if n < 2 {
@@ -275,6 +284,9 @@ func dedupDeltas(deltas Deltas) Deltas {
 // If a & b represent the same event, returns the delta that ought to be kept.
 // Otherwise, returns nil.
 // TODO: is there anything other than deletions that need deduping?
+//如果a和b代表相同的事件，则返回应保留的增量。
+//否则，返回nil。
+// TODO：除了删除需要重复数据删除之外，还有其他什么吗？
 func isDup(a, b *Delta) *Delta {
 	if out := isDeletionDup(a, b); out != nil {
 		return out
@@ -284,11 +296,13 @@ func isDup(a, b *Delta) *Delta {
 }
 
 // keep the one with the most information if both are deletions.
+// 如果两个都被删除，最多保留一个事件。
 func isDeletionDup(a, b *Delta) *Delta {
 	if b.Type != Deleted || a.Type != Deleted {
 		return nil
 	}
 	// Do more sophisticated checks, or is this sufficient?
+	// 检查 b 是否为未知类型
 	if _, ok := b.Object.(DeletedFinalStateUnknown); ok {
 		return a
 	}
@@ -297,24 +311,31 @@ func isDeletionDup(a, b *Delta) *Delta {
 
 // queueActionLocked appends to the delta list for the object.
 // Caller must lock first.
+// 为对象追加事件到队列，调用前需要先取锁
 func (f *DeltaFIFO) queueActionLocked(actionType DeltaType, obj interface{}) error {
+	// 生成Object对应的key
 	id, err := f.KeyOf(obj)
 	if err != nil {
 		return KeyError{obj, err}
 	}
 
+	// 将新的时间追加的已有队列
 	newDeltas := append(f.items[id], Delta{actionType, obj})
+	// 进行去重操作（只针对最后两个事件执行）
 	newDeltas = dedupDeltas(newDeltas)
 
 	if len(newDeltas) > 0 {
 		if _, exists := f.items[id]; !exists {
 			f.queue = append(f.queue, id)
 		}
+		// 更新事件队列
 		f.items[id] = newDeltas
+		// 广播通知消费者解除阻塞
 		f.cond.Broadcast()
 	} else {
 		// We need to remove this from our map (extra items in the queue are
 		// ignored if they are not in the map).
+		// 队列中没有事件，则将他移除
 		delete(f.items, id)
 	}
 	return nil
@@ -339,6 +360,7 @@ func (f *DeltaFIFO) listLocked() []interface{} {
 
 // ListKeys returns a list of all the keys of the objects currently
 // in the FIFO.
+// 列出所有的key
 func (f *DeltaFIFO) ListKeys() []string {
 	f.lock.RLock()
 	defer f.lock.RUnlock()
@@ -387,27 +409,40 @@ func (f *DeltaFIFO) IsClosed() bool {
 // added/updated. The item is removed from the queue (and the store) before it
 // is returned, so if you don't successfully process it, you need to add it back
 // with AddIfNotPresent().
+// pop 方法会阻塞至有元素进入队列，然后将它返回
+// 如果队列中有多个元素，则按照他们添加或更新的顺序返回
+// 元素在返回之前已经被移除了队列，如果process函数没有成功的处理它
+// 则需要调用 AddIfNotPresent() 来把它添加回去
+//
 // process function is called under lock, so it is safe update data structures
 // in it that need to be in sync with the queue (e.g. knownKeys). The PopProcessFunc
 // may return an instance of ErrRequeue with a nested error to indicate the current
 // item should be requeued (equivalent to calling AddIfNotPresent under the lock).
+// process 函数是在取得锁之后执行的，所以它是安全的更新需要与队列同步的数据结构（例如knownKeys）
+// PopProcessFunc 可能返回带有嵌套错误的 ErrRequeue 实例，
+// 来表示当前元素应重新排队（等效于在锁下调用 AddIfNotPresent ）。
 //
 // Pop returns a 'Deltas', which has a complete list of all the things
 // that happened to the object (deltas) while it was sitting in the queue.
+// pop 返回一个Delta, 其中包含对象在队列中时发生的所有事件（增量）的完整列表。
 func (f *DeltaFIFO) Pop(process PopProcessFunc) (interface{}, error) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	for {
 		for len(f.queue) == 0 {
 			// When the queue is empty, invocation of Pop() is blocked until new item is enqueued.
+			//当队列为空时，将阻止Pop（）的调用，直到新项目入队。
 			// When Close() is called, the f.closed is set and the condition is broadcasted.
+			//调用Close（）时，将设置f.closed并广播条件。
 			// Which causes this loop to continue and return from the Pop().
+			//这将导致该循环继续并从Pop（）返回。
 			if f.IsClosed() {
 				return nil, FIFOClosedError
 			}
-
+			// 阻塞等待数据，只有收到 f.cond.Broadcast() 才会解除阻塞状态
 			f.cond.Wait()
 		}
+		// 取出头部数据
 		id := f.queue[0]
 		f.queue = f.queue[1:]
 		if f.initialPopulationCount > 0 {
@@ -416,11 +451,15 @@ func (f *DeltaFIFO) Pop(process PopProcessFunc) (interface{}, error) {
 		item, ok := f.items[id]
 		if !ok {
 			// Item may have been deleted subsequently.
+			// 元素可能随后被删除
 			continue
 		}
+		// 从队列中删除当前元素
 		delete(f.items, id)
+		// 执行process 处理元素
 		err := process(item)
 		if e, ok := err.(ErrRequeue); ok {
+			// 如果元素处理错误，则会被重新添加
 			f.addIfNotPresent(id, item)
 			err = e.Err
 		}
@@ -508,16 +547,19 @@ func (f *DeltaFIFO) Replace(list []interface{}, resourceVersion string) error {
 }
 
 // Resync will send a sync event for each item
+// 将为每个元素发送一个同步事件
 func (f *DeltaFIFO) Resync() error {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 
 	if f.knownObjects == nil {
+		// f.knownObjects 为 indexer 本地存储对象
 		return nil
 	}
 
 	keys := f.knownObjects.ListKeys()
 	for _, k := range keys {
+		// 调用sync
 		if err := f.syncKeyLocked(k); err != nil {
 			return err
 		}
@@ -533,6 +575,7 @@ func (f *DeltaFIFO) syncKey(key string) error {
 }
 
 func (f *DeltaFIFO) syncKeyLocked(key string) error {
+	// 获取key对应的资源
 	obj, exists, err := f.knownObjects.GetByKey(key)
 	if err != nil {
 		klog.Errorf("Unexpected error %v during lookup of key %v, unable to queue object for sync", err, key)
@@ -546,6 +589,8 @@ func (f *DeltaFIFO) syncKeyLocked(key string) error {
 	// we ignore the Resync for it. This is to avoid the race, in which the resync
 	// comes with the previous value of object (since queueing an event for the object
 	// doesn't trigger changing the underlying store <knownObjects>.
+	// 如果我们正在执行Resync（）并且已经有一个事件在排队等待该对象，则我们将忽略该对象的Resync。
+	// 这是为了避免竞争，其中重新同步带有对象的先前值（因为对对象的事件进行排队不会触发更改基础存储<knownObjects>。
 	id, err := f.KeyOf(obj)
 	if err != nil {
 		return KeyError{obj, err}
@@ -554,6 +599,7 @@ func (f *DeltaFIFO) syncKeyLocked(key string) error {
 		return nil
 	}
 
+	// 发送 Sync 动作
 	if err := f.queueActionLocked(Sync, obj); err != nil {
 		return fmt.Errorf("couldn't queue object: %v", err)
 	}

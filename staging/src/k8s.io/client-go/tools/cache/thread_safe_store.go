@@ -56,10 +56,12 @@ type ThreadSafeStore interface {
 
 // threadSafeMap implements ThreadSafeStore
 type threadSafeMap struct {
-	lock  sync.RWMutex
+	lock sync.RWMutex
+	// 用了存储数据，key通过keyFunc函数计算得到
 	items map[string]interface{}
 
 	// indexers maps a name to an IndexFunc
+	// 索引器将名称映射到IndexFunc
 	indexers Indexers
 	// indices maps a name to an Index
 	indices Indices
@@ -172,17 +174,23 @@ func (c *threadSafeMap) Index(indexName string, obj interface{}) ([]interface{},
 }
 
 // ByIndex returns a list of items that match an exact value on the index function
+// 返回与index函数上的key匹配的元素列表
+// indexName 索引器名称
+// indexKey 需要检索的key
 func (c *threadSafeMap) ByIndex(indexName, indexKey string) ([]interface{}, error) {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
+	// 查找指定索引器函数
 	indexFunc := c.indexers[indexName]
 	if indexFunc == nil {
 		return nil, fmt.Errorf("Index with name %s does not exist", indexName)
 	}
 
+	// 查找指定缓存
 	index := c.indices[indexName]
 
+	// 从缓存中查找指定key对应的数据
 	set := index[indexKey]
 	list := make([]interface{}, 0, set.Len())
 	for _, key := range set.List() {

@@ -39,18 +39,23 @@ const incomingQueueLength = 25
 
 // Broadcaster distributes event notifications among any number of watchers. Every event
 // is delivered to every watcher.
+// 在任意数量的观察者之间分发事件通知。
+// 每个事件都传递给每个观察者。
 type Broadcaster struct {
 	// TODO: see if this lock is needed now that new watchers go through
 	// the incoming channel.
 	lock sync.Mutex
 
+	// 监听者
 	watchers     map[int64]*broadcasterWatcher
 	nextWatcher  int64
 	distributing sync.WaitGroup
 
+	// 事件通道，默认缓冲区长度为25
 	incoming chan Event
 
 	// How large to make watcher's channel.
+	// 建立watch channel 的大小
 	watchQueueLength int
 	// If one of the watch channels is full, don't wait for it to become empty.
 	// Instead just deliver it to the watchers that do have space in their
@@ -58,12 +63,17 @@ type Broadcaster struct {
 	// It's more fair to do this on a per-watcher basis than to do it on the
 	// "incoming" channel, which would allow one slow watcher to prevent all
 	// other watchers from getting new events.
+	// 如果其中一个观看频道已满，不要等待它变空。
+	// 而是将其传递给确实在其频道中有空间的观察者，然后继续进行下一个事件。
+	// 在每个 watcher 的基础上执行此操作比在“传入”频道上执行此操作更为公平
+	// 这将使一名缓慢的 watch 能够阻止所有其他收看器获得新事件。
 	fullChannelBehavior FullChannelBehavior
 }
 
 // NewBroadcaster creates a new Broadcaster. queueLength is the maximum number of events to queue per watcher.
 // It is guaranteed that events will be distributed in the order in which they occur,
 // but the order in which a single event is distributed among all of the watchers is unspecified.
+// 创建新的 Broadcaster
 func NewBroadcaster(queueLength int, fullChannelBehavior FullChannelBehavior) *Broadcaster {
 	m := &Broadcaster{
 		watchers:            map[int64]*broadcasterWatcher{},
@@ -97,6 +107,7 @@ func (obj functionFakeRuntimeObject) DeepCopyObject() runtime.Object {
 // The purpose of this terrible hack is so that watchers added after an event
 // won't ever see that event, and will always see any event after they are
 // added.
+// 忽略队列中现有的元素，等他们分发完成后再进行watch
 func (b *Broadcaster) blockQueue(f func()) {
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -113,6 +124,7 @@ func (b *Broadcaster) blockQueue(f func()) {
 // Watch adds a new watcher to the list and returns an Interface for it.
 // Note: new watchers will only receive new events. They won't get an entire history
 // of previous events.
+// 创建一个新的 watcher， 只接收新的事件
 func (m *Broadcaster) Watch() Interface {
 	var w *broadcasterWatcher
 	m.blockQueue(func() {
@@ -135,6 +147,7 @@ func (m *Broadcaster) Watch() Interface {
 // queuedEvents down the new watch before beginning to send ordinary events from Broadcaster.
 // The returned watch will have a queue length that is at least large enough to accommodate
 // all of the items in queuedEvents.
+// 创建一个watcher， 在开始接受生产者生成的事件之前，先给 watcher 发送一些事件
 func (m *Broadcaster) WatchWithPrefix(queuedEvents []Event) Interface {
 	var w *broadcasterWatcher
 	m.blockQueue(func() {
@@ -161,6 +174,7 @@ func (m *Broadcaster) WatchWithPrefix(queuedEvents []Event) Interface {
 }
 
 // stopWatching stops the given watcher and removes it from the list.
+// 停止某个 watcher
 func (m *Broadcaster) stopWatching(id int64) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -174,6 +188,7 @@ func (m *Broadcaster) stopWatching(id int64) {
 }
 
 // closeAll disconnects all watchers (presumably in response to a Shutdown call).
+// 关闭所有 watcher
 func (m *Broadcaster) closeAll() {
 	m.lock.Lock()
 	defer m.lock.Unlock()
@@ -197,12 +212,14 @@ func (m *Broadcaster) Action(action EventType, obj runtime.Object) {
 // that since they can be buffered, this means that the watchers might not
 // have received the data yet as it can remain sitting in the buffered
 // channel.
+// 停止 Broadcaster
 func (m *Broadcaster) Shutdown() {
 	close(m.incoming)
 	m.distributing.Wait()
 }
 
 // loop receives from m.incoming and distributes to all watchers.
+// 监听 incoming，分发事件
 func (m *Broadcaster) loop() {
 	// Deliberately not catching crashes here. Yes, bring down the process if there's a
 	// bug in watch.Broadcaster.
@@ -211,7 +228,7 @@ func (m *Broadcaster) loop() {
 			event.Object.(functionFakeRuntimeObject)()
 			continue
 		}
-		// 分发时间
+		// 分发事件
 		m.distribute(event)
 	}
 	m.closeAll()
@@ -254,6 +271,7 @@ type broadcasterWatcher struct {
 }
 
 // ResultChan returns a channel to use for waiting on events.
+// 返回一个channel，等待事件
 func (mw *broadcasterWatcher) ResultChan() <-chan Event {
 	return mw.result
 }

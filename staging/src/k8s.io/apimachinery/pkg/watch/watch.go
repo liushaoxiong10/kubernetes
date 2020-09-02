@@ -50,6 +50,7 @@ const (
 )
 
 // Event represents a single event to a watched resource.
+// 单个事件
 // +k8s:deepcopy-gen=true
 type Event struct {
 	Type EventType

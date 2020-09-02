@@ -4635,64 +4635,79 @@ const (
 type Event struct {
 	metav1.TypeMeta `json:",inline"`
 	// Standard object's metadata.
+	// meta对象
 	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 
 	// The object that this event is about.
+	// 此事件有关的对象。
 	InvolvedObject ObjectReference `json:"involvedObject" protobuf:"bytes,2,opt,name=involvedObject"`
 
 	// This should be a short, machine understandable string that gives the reason
 	// for the transition into the object's current status.
+	// 简短的信息
 	// TODO: provide exact specification for format.
 	// +optional
 	Reason string `json:"reason,omitempty" protobuf:"bytes,3,opt,name=reason"`
 
 	// A human-readable description of the status of this operation.
+	// 详细信息
 	// TODO: decide on maximum length.
 	// +optional
 	Message string `json:"message,omitempty" protobuf:"bytes,4,opt,name=message"`
 
 	// The component reporting this event. Should be a short machine understandable string.
+	// 事件源
 	// +optional
 	Source EventSource `json:"source,omitempty" protobuf:"bytes,5,opt,name=source"`
 
 	// The time at which the event was first recorded. (Time of server receipt is in TypeMeta.)
+	// 事件的开始时间
 	// +optional
 	FirstTimestamp metav1.Time `json:"firstTimestamp,omitempty" protobuf:"bytes,6,opt,name=firstTimestamp"`
 
 	// The time at which the most recent occurrence of this event was recorded.
+	// 最近一次记录此事件的时间。
 	// +optional
 	LastTimestamp metav1.Time `json:"lastTimestamp,omitempty" protobuf:"bytes,7,opt,name=lastTimestamp"`
 
 	// The number of times this event has occurred.
+	// 此事件发生的次数。
 	// +optional
 	Count int32 `json:"count,omitempty" protobuf:"varint,8,opt,name=count"`
 
 	// Type of this event (Normal, Warning), new types could be added in the future
+	// 事件的类型
 	// +optional
 	Type string `json:"type,omitempty" protobuf:"bytes,9,opt,name=type"`
 
 	// Time when this Event was first observed.
+	// 首次观察到此事件的时间
 	// +optional
 	EventTime metav1.MicroTime `json:"eventTime,omitempty" protobuf:"bytes,10,opt,name=eventTime"`
 
 	// Data about the Event series this event represents or nil if it's a singleton Event.
+	// 有关此事件表示的事件系列的数据，如果是单例事件，则为nil。
 	// +optional
 	Series *EventSeries `json:"series,omitempty" protobuf:"bytes,11,opt,name=series"`
 
 	// What action was taken/failed regarding to the Regarding object.
+	// 针对对象已采取/未采取什么措施。
 	// +optional
 	Action string `json:"action,omitempty" protobuf:"bytes,12,opt,name=action"`
 
 	// Optional secondary object for more complex actions.
+	// 可选的辅助对象，用于更复杂的操作。
 	// +optional
 	Related *ObjectReference `json:"related,omitempty" protobuf:"bytes,13,opt,name=related"`
 
 	// Name of the controller that emitted this Event, e.g. `kubernetes.io/kubelet`.
+	// 发出此事件的控制器的名称，例如 `kubernetes.io/kubelet`。
 	// +optional
 	ReportingController string `json:"reportingComponent" protobuf:"bytes,14,opt,name=reportingComponent"`
 
 	// ID of the controller instance, e.g. `kubelet-xyzf`.
+	// 控制器实例的ID，例如 `kubelet-xyzf`。
 	// +optional
 	ReportingInstance string `json:"reportingInstance" protobuf:"bytes,15,opt,name=reportingInstance"`
 }

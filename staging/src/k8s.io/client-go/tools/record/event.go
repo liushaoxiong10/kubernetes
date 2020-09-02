@@ -44,6 +44,7 @@ const maxQueuedEvents = 1000
 // EventSink must respect the namespace that will be embedded in 'event'.
 // It is assumed that EventSink will return the same sorts of errors as
 // pkg/client's REST client.
+// 事件接收器
 type EventSink interface {
 	Create(event *v1.Event) (*v1.Event, error)
 	Update(event *v1.Event) (*v1.Event, error)
@@ -86,18 +87,25 @@ type EventBroadcaster interface {
 	// StartEventWatcher starts sending events received from this EventBroadcaster to the given
 	// event handler function. The return value can be ignored or used to stop recording, if
 	// desired.
+	// 开始把从 EventBroadcaster 接收到的事件发送到给定的事件处理函数。
+	// 如果需要，可以忽略返回值或将其用于停止记录。
 	StartEventWatcher(eventHandler func(*v1.Event)) watch.Interface
 
 	// StartRecordingToSink starts sending events received from this EventBroadcaster to the given
 	// sink. The return value can be ignored or used to stop recording, if desired.
+	// 开始把从 EventBroadcaster 接收的事件发送到给定接收器。
+	// 如果需要，可以忽略返回值或将其用于停止记录。
 	StartRecordingToSink(sink EventSink) watch.Interface
 
 	// StartLogging starts sending events received from this EventBroadcaster to the given logging
 	// function. The return value can be ignored or used to stop recording, if desired.
+	// 开始把从 EventBroadcaster 接收的事件发送到给定的日志记录功能。
+	// 如果需要，可以忽略返回值或将其用于停止记录。
 	StartLogging(logf func(format string, args ...interface{})) watch.Interface
 
 	// NewRecorder returns an EventRecorder that can be used to send events to this EventBroadcaster
 	// with the event source set to the given event source.
+	// 返回一个EventRecorder，该事件可用于将事件源设置为给定事件源的事件发送到此EventBroadcaster。
 	NewRecorder(scheme *runtime.Scheme, source v1.EventSource) EventRecorder
 }
 
@@ -111,6 +119,7 @@ func NewBroadcasterForTests(sleepDuration time.Duration) EventBroadcaster {
 	return &eventBroadcasterImpl{watch.NewBroadcaster(maxQueuedEvents, watch.DropIfChannelFull), sleepDuration}
 }
 
+// Event Broadcaster
 type eventBroadcasterImpl struct {
 	*watch.Broadcaster
 	sleepDuration time.Duration
@@ -241,9 +250,12 @@ func (eventBroadcaster *eventBroadcasterImpl) NewRecorder(scheme *runtime.Scheme
 	return &recorderImpl{scheme, source, eventBroadcaster.Broadcaster, clock.RealClock{}}
 }
 
+// EventRecorder 实现
 type recorderImpl struct {
 	scheme *runtime.Scheme
+	// 事件源
 	source v1.EventSource
+	// Broadcaster
 	*watch.Broadcaster
 	clock clock.Clock
 }

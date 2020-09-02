@@ -76,11 +76,13 @@ func NewFilteredPodInformer(client kubernetes.Interface, namespace string, resyn
 	)
 }
 
+// 生成informer
 func (f *podInformer) defaultInformer(client kubernetes.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
 	return NewFilteredPodInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *podInformer) Informer() cache.SharedIndexInformer {
+	// 调用工厂函数创建informer
 	return f.factory.InformerFor(&corev1.Pod{}, f.defaultInformer)
 }
 

@@ -189,6 +189,7 @@ type deleteNotification struct {
 func (s *sharedIndexInformer) Run(stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 
+	// 创建 DeltaFIFO 队列
 	fifo := NewDeltaFIFO(MetaNamespaceKeyFunc, s.indexer)
 
 	cfg := &Config{
@@ -341,28 +342,35 @@ func (s *sharedIndexInformer) AddEventHandlerWithResyncPeriod(handler ResourceEv
 	}
 }
 
+// DeltaFIFO Pop函数 process 方法实现
 func (s *sharedIndexInformer) HandleDeltas(obj interface{}) error {
 	s.blockDeltas.Lock()
 	defer s.blockDeltas.Unlock()
 
 	// from oldest to newest
+	// 遍历所有事件
 	for _, d := range obj.(Deltas) {
 		switch d.Type {
 		case Sync, Added, Updated:
+			// 同步、添加、更新
 			isSync := d.Type == Sync
 			s.cacheMutationDetector.AddObject(d.Object)
+			// 如果存在盖对象，则更新
 			if old, exists, err := s.indexer.Get(d.Object); err == nil && exists {
 				if err := s.indexer.Update(d.Object); err != nil {
 					return err
 				}
+				// 事件分发
 				s.processor.distribute(updateNotification{oldObj: old, newObj: d.Object}, isSync)
 			} else {
+				// 否则添加
 				if err := s.indexer.Add(d.Object); err != nil {
 					return err
 				}
 				s.processor.distribute(addNotification{newObj: d.Object}, isSync)
 			}
 		case Deleted:
+			// 删除
 			if err := s.indexer.Delete(d.Object); err != nil {
 				return err
 			}

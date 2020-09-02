@@ -272,6 +272,7 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 
 			f.cond.Wait()
 		}
+		// 取出第一个元素
 		id := f.queue[0]
 		f.queue = f.queue[1:]
 		if f.initialPopulationCount > 0 {
@@ -283,6 +284,7 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 			continue
 		}
 		delete(f.items, id)
+		// 执行 process 回调
 		err := process(item)
 		if e, ok := err.(ErrRequeue); ok {
 			f.addIfNotPresent(id, item)

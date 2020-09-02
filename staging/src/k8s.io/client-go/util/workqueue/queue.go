@@ -73,11 +73,13 @@ type Type struct {
 	// queue defines the order in which we will work on items. Every
 	// element of queue should be in the dirty set and not in the
 	// processing set.
+	// 队列定义了我们处理项目的顺序。 队列中的每个元素都应该在 dirty set 中而不是在 processing set 中。
 	// 实际存储元素
 	// slice 保证有序
 	queue []t
 
 	// dirty defines all of the items that need to be processed.
+	// dirty 定义所有需要处理的项目。
 	// 去重，保证元素只被添加了一次
 	dirty set
 
@@ -85,6 +87,10 @@ type Type struct {
 	// These things may be simultaneously in the dirty set. When we finish
 	// processing something and remove it from this set, we'll check if
 	// it's in the dirty set, and if so, add it to the queue.
+	// 当前正在处理的事物在处理集中。
+	// 这些东西可能同时在 dirty set 中。
+	// 当我们完成处理并将其从这个 set 中删除时，我们将检查它是否在 dirty set 中
+	// 如果是，则将其添加到队列中。
 	// 标记元素是否正在被处理
 	processing set
 
@@ -122,18 +128,24 @@ func (q *Type) Add(item interface{}) {
 	if q.shuttingDown {
 		return
 	}
+	// 如果 dirty 中已经存在改元素，则不添加
 	if q.dirty.has(item) {
 		return
 	}
 
+	// 添加 metric
 	q.metrics.add(item)
 
+	// 添加元素到 dirty
 	q.dirty.insert(item)
+	// 该元素正在被执行
 	if q.processing.has(item) {
 		return
 	}
 
+	// 添加元素到队列
 	q.queue = append(q.queue, item)
+	// 通知有新元素
 	q.cond.Signal()
 }
 
@@ -149,9 +161,13 @@ func (q *Type) Len() int {
 // Get blocks until it can return an item to be processed. If shutdown = true,
 // the caller should end their goroutine. You must call Done with item when you
 // have finished processing it.
+// 阻塞型的获取元素。
+// 如果shutdown = true，则调用方应结束其goroutine。
+// 完成处理后，必须调用 Done() 方法 。
 func (q *Type) Get() (item interface{}, shutdown bool) {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
+	// 等待队列中有元素
 	for len(q.queue) == 0 && !q.shuttingDown {
 		q.cond.Wait()
 	}
@@ -160,11 +176,15 @@ func (q *Type) Get() (item interface{}, shutdown bool) {
 		return nil, true
 	}
 
+	// 取出队列的第一个元素
 	item, q.queue = q.queue[0], q.queue[1:]
 
+	// 设置 metric
 	q.metrics.get(item)
 
+	// 将元素放到正在执行的队列中
 	q.processing.insert(item)
+	// 从dirty 中将他删除
 	q.dirty.delete(item)
 
 	return item, false
@@ -173,14 +193,17 @@ func (q *Type) Get() (item interface{}, shutdown bool) {
 // Done marks item as done processing, and if it has been marked as dirty again
 // while it was being processed, it will be re-added to the queue for
 // re-processing.
+//完成将元素标记为已完成处理，如果该元素在 dirty set 中还存在，则会将其重新添加到队列中以进行重新处理。
 func (q *Type) Done(item interface{}) {
 	q.cond.L.Lock()
 	defer q.cond.L.Unlock()
 
 	q.metrics.done(item)
 
+	// 从执行队列删除
 	q.processing.delete(item)
 	if q.dirty.has(item) {
+		// 如果dirty set 中还存在该元素，则添加到队列中
 		q.queue = append(q.queue, item)
 		q.cond.Signal()
 	}

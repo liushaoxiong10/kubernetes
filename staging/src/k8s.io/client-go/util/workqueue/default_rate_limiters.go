@@ -24,7 +24,7 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// 限速队列
+// 限速器
 type RateLimiter interface {
 	// When gets an item and gets to decide how long that item should wait
 	// 获取指定元素应该等待的时间
@@ -44,6 +44,7 @@ func DefaultControllerRateLimiter() RateLimiter {
 	return NewMaxOfRateLimiter(
 		NewItemExponentialFailureRateLimiter(5*time.Millisecond, 1000*time.Second),
 		// 10 qps, 100 bucket size.  This is only for retry speed and its only the overall factor (not per item)
+		// 10 qps，100桶大小。 这仅适用于重试速度及其唯一的整体因素（不适用于每个项目）
 		&BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(10), 100)},
 	)
 }
@@ -101,11 +102,15 @@ func (r *ItemExponentialFailureRateLimiter) When(item interface{}) time.Duration
 	r.failuresLock.Lock()
 	defer r.failuresLock.Unlock()
 
+	// 获取排队数
 	exp := r.failures[item]
+	// 增加排队数
 	r.failures[item] = r.failures[item] + 1
 
 	// The backoff is capped such that 'calculated' value never overflows.
+	// 计算限速指数
 	backoff := float64(r.baseDelay.Nanoseconds()) * math.Pow(2, float64(exp))
+	// 最大不超过 maxDelay
 	if backoff > math.MaxInt64 {
 		return r.maxDelay
 	}
@@ -118,6 +123,7 @@ func (r *ItemExponentialFailureRateLimiter) When(item interface{}) time.Duration
 	return calculated
 }
 
+// 获取排队数
 func (r *ItemExponentialFailureRateLimiter) NumRequeues(item interface{}) int {
 	r.failuresLock.Lock()
 	defer r.failuresLock.Unlock()
@@ -125,6 +131,7 @@ func (r *ItemExponentialFailureRateLimiter) NumRequeues(item interface{}) int {
 	return r.failures[item]
 }
 
+// 清空排队数
 func (r *ItemExponentialFailureRateLimiter) Forget(item interface{}) {
 	r.failuresLock.Lock()
 	defer r.failuresLock.Unlock()
@@ -164,8 +171,10 @@ func (r *ItemFastSlowRateLimiter) When(item interface{}) time.Duration {
 	r.failuresLock.Lock()
 	defer r.failuresLock.Unlock()
 
+	// 排队数加一
 	r.failures[item] = r.failures[item] + 1
 
+	// 选择速率 fast/slow
 	if r.failures[item] <= r.maxFastAttempts {
 		return r.fastDelay
 	}
@@ -198,8 +207,10 @@ type MaxOfRateLimiter struct {
 
 func (r *MaxOfRateLimiter) When(item interface{}) time.Duration {
 	ret := time.Duration(0)
+	// 遍历所有算法
 	for _, limiter := range r.limiters {
 		curr := limiter.When(item)
+		// 获取最大的时间
 		if curr > ret {
 			ret = curr
 		}

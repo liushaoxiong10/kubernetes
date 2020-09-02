@@ -166,6 +166,7 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 	// etcd contents. Reflector framework will catch up via Watch() eventually.
 	options := metav1.ListOptions{ResourceVersion: "0"}
 
+	// list 操作
 	if err := func() error {
 		initTrace := trace.New("Reflector " + r.name + " ListAndWatch")
 		defer initTrace.LogIfLong(10 * time.Second)
@@ -179,6 +180,8 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 					panicCh <- r
 				}
 			}()
+			// 获取资源下的所有对象的数据
+			// 由informer传入
 			list, err = r.listerWatcher.List(options)
 			close(listCh)
 		}()
@@ -197,17 +200,21 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 		if err != nil {
 			return fmt.Errorf("%s: Unable to understand list result %#v: %v", r.name, list, err)
 		}
+		// 获取资源版本号
 		resourceVersion = listMetaInterface.GetResourceVersion()
 		initTrace.Step("Resource version extracted")
+		// 将资源数据转化为资源对象列表
 		items, err := meta.ExtractList(list)
 		if err != nil {
 			return fmt.Errorf("%s: Unable to understand list result %#v (%v)", r.name, list, err)
 		}
 		initTrace.Step("Objects extracted")
+		// 将资源对象列表的资源对象和资源版本号存储（replace）到DeltaFIFO中
 		if err := r.syncWith(items, resourceVersion); err != nil {
 			return fmt.Errorf("%s: Unable to sync list result: %v", r.name, err)
 		}
 		initTrace.Step("SyncWith done")
+		// 设置最新的资源版本号
 		r.setLastSyncResourceVersion(resourceVersion)
 		initTrace.Step("Resource version updated")
 		return nil
@@ -243,6 +250,7 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 		}
 	}()
 
+	// watch 操作
 	for {
 		// give the stopCh a chance to stop the loop, even in case of continue statements further down on errors
 		select {
@@ -259,6 +267,7 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 			TimeoutSeconds: &timeoutSeconds,
 		}
 
+		// 通过 watch 获取更新资源
 		w, err := r.listerWatcher.Watch(options)
 		if err != nil {
 			switch err {
@@ -335,6 +344,7 @@ loop:
 				continue
 			}
 			newResourceVersion := meta.GetResourceVersion()
+			// 根据事件类型执行相应操作
 			switch event.Type {
 			case watch.Added:
 				err := r.store.Add(event.Object)
