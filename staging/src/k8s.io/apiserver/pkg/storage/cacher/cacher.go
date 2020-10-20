@@ -45,6 +45,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+//prometheus 监控使用
 var (
 	initCounter = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -92,6 +93,7 @@ type Config struct {
 	Codec runtime.Codec
 }
 
+//key:id  value: cacheWatcher
 type watchersMap map[int]*cacheWatcher
 
 func (wm watchersMap) addWatcher(w *cacheWatcher, number int) {
@@ -157,6 +159,7 @@ type filterWithAttrsFunc func(key string, l labels.Set, f fields.Set) bool
 // based on the underlying storage contents.
 // Cacher implements storage.Interface (although most of the calls are just
 // delegated to the underlying storage).
+// 带有缓存功能的资源存储对象
 type Cacher struct {
 	// HighWaterMarks for performance debugging.
 	// Important: Since HighWaterMark is using sync/atomic, it has to be at the top of the struct due to a bug on 32-bit platforms
@@ -182,6 +185,7 @@ type Cacher struct {
 	objectType reflect.Type
 
 	// "sliding window" of recent changes of objects and the current state.
+	// 通过 Reflector 框架与 UnderlyingStore 底层存储对象交互，并将回调时间分布存储到 w.onEvent、w.cache、cache.Store
 	watchCache *watchCache
 	reflector  *cache.Reflector
 
@@ -388,6 +392,7 @@ func (c *Cacher) Watch(ctx context.Context, key string, resourceVersion string, 
 	c.Lock()
 	defer c.Unlock()
 	forget := forgetWatcher(c, c.watcherIdx, triggerValue, triggerSupported)
+	// 实例化 cacheWatcher
 	watcher := newCacheWatcher(watchRV, chanSize, initEvents, filterWithAttrsFunction(key, pred), forget, c.versioner)
 
 	c.watchers.addWatcher(watcher, c.watcherIdx, triggerValue, triggerSupported)
@@ -668,6 +673,7 @@ func (c *Cacher) dispatchEvent(event *watchCacheEvent) {
 	c.startDispatching(event)
 
 	// Since add() can block, we explicitly add when cacher is unlocked.
+	//调用 watcher 的 add 方法，分发事件
 	for _, watcher := range c.watchersBuffer {
 		watcher.add(event, c.timer, c.dispatchTimeoutBudget)
 	}
@@ -890,6 +896,7 @@ func newCacheWatcher(resourceVersion uint64, chanSize int, initEvents []*watchCa
 		forget:    forget,
 		versioner: versioner,
 	}
+	//协程监控input
 	go watcher.process(initEvents, resourceVersion)
 	return watcher
 }
@@ -999,6 +1006,7 @@ func (c *cacheWatcher) sendWatchCacheEvent(event *watchCacheEvent) {
 	}
 }
 
+// 监控input
 func (c *cacheWatcher) process(initEvents []*watchCacheEvent, resourceVersion uint64) {
 	defer utilruntime.HandleCrash()
 

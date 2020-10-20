@@ -27,10 +27,12 @@ import (
 )
 
 // Config contains all the settings for a Controller.
+// controller 配置
 type Config struct {
 	// The queue for your objects - has to be a DeltaFIFO due to
 	// assumptions in the implementation. Your Process() function
 	// should accept the output of this Queue's Pop() method.
+	// 队列，必须为 DeltaFIFO
 	Queue
 
 	// Something that can list and watch your objects.
@@ -49,6 +51,7 @@ type Config struct {
 	// problem, we can change that replacement policy to append new
 	// things to the end of the queue instead of replacing the entire
 	// queue.
+	// Resync 时长
 	FullResyncPeriod time.Duration
 
 	// ShouldResync, if specified, is invoked when the controller's reflector determines the next
@@ -72,6 +75,7 @@ type ShouldResyncFunc func() bool
 type ProcessFunc func(obj interface{}) error
 
 // Controller is a generic controller framework.
+// 控制器
 type controller struct {
 	config         Config
 	reflector      *Reflector
@@ -97,12 +101,15 @@ func New(c *Config) Controller {
 // Run begins processing items, and will continue until a value is sent down stopCh.
 // It's an error to call Run more than once.
 // Run blocks; call via go.
+// 启动 controller
 func (c *controller) Run(stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
 	go func() {
 		<-stopCh
+		// 关闭队列
 		c.config.Queue.Close()
 	}()
+	// 创建 Reflector
 	r := NewReflector(
 		c.config.ListerWatcher,
 		c.config.ObjectType,
@@ -125,6 +132,7 @@ func (c *controller) Run(stopCh <-chan struct{}) {
 }
 
 // Returns true once this controller has completed an initial resource listing
+// 完成初始化后返回true
 func (c *controller) HasSynced() bool {
 	return c.config.Queue.HasSynced()
 }
@@ -147,9 +155,11 @@ func (c *controller) LastSyncResourceVersion() string {
 // also be helpful.
 func (c *controller) processLoop() {
 	for {
+		// 使用Pop 方法 执行回调函数
 		obj, err := c.config.Queue.Pop(PopProcessFunc(c.config.Process))
 		if err != nil {
 			if err == FIFOClosedError {
+				// 队列关闭
 				return
 			}
 			if c.config.RetryOnError {
@@ -276,6 +286,7 @@ func DeletionHandlingMetaNamespaceKeyFunc(obj interface{}) (string, error) {
 //    or you stop the controller).
 //  * h is the object you want notifications sent to.
 //
+// 创建Informer
 func NewInformer(
 	lw ListerWatcher,
 	objType runtime.Object,

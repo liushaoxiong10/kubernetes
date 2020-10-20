@@ -246,13 +246,15 @@ func (f *StorageFactoryRestOptionsFactory) GetRESTOptions(resource schema.GroupR
 	}
 
 	ret := generic.RESTOptions{
-		StorageConfig:           storageConfig,
+		StorageConfig: storageConfig,
+		// 底层存储
 		Decorator:               generic.UndecoratedStorage,
 		DeleteCollectionWorkers: f.Options.DeleteCollectionWorkers,
 		EnableGarbageCollection: f.Options.EnableGarbageCollection,
 		ResourcePrefix:          f.StorageFactory.ResourcePrefix(resource),
 		CountMetricPollPeriod:   f.Options.StorageConfig.CountMetricPollPeriod,
 	}
+	// 是否开启 watch cache
 	if f.Options.EnableWatchCache {
 		sizes, err := ParseWatchCacheSizes(f.Options.WatchCacheSizes)
 		if err != nil {
@@ -262,6 +264,7 @@ func (f *StorageFactoryRestOptionsFactory) GetRESTOptions(resource schema.GroupR
 		if !ok {
 			cacheSize = f.Options.DefaultWatchCacheSize
 		}
+		// 替换为具有cache 的存储
 		ret.Decorator = genericregistry.StorageWithCacher(cacheSize)
 	}
 

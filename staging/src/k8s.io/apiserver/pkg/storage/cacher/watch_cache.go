@@ -111,6 +111,7 @@ type watchCache struct {
 	// by endIndex (if cache is full it will be startIndex + capacity).
 	// Both startIndex and endIndex can be greater than buffer capacity -
 	// you should always apply modulo capacity to get an index in cache array.
+	//将事件存储至缓存滑动窗口，防止事件丢失
 	cache      []watchCacheElement
 	startIndex int
 	endIndex   int
@@ -119,6 +120,7 @@ type watchCache struct {
 	// history" i.e. from the moment just after the newest cached watched event.
 	// It is necessary to effectively allow clients to start watching at now.
 	// NOTE: We assume that <store> is thread-safe.
+	//本地缓存
 	store cache.Store
 
 	// ResourceVersion up to which the watchCache is propagated.
@@ -132,6 +134,7 @@ type watchCache struct {
 
 	// This handler is run at the end of every Add/Update/Delete method
 	// and additionally gets the previous value of the object.
+	//将事件回调给 CacherStorage，CacherStorage 将其分发给目前所有已连接的观察者
 	onEvent func(*watchCacheEvent)
 
 	// for testing timeouts.
@@ -248,16 +251,20 @@ func (w *watchCache) processEvent(event watch.Event, resourceVersion uint64, upd
 		watchCacheEvent.PrevObjFields = previousElem.Fields
 	}
 
+	//执行回调
 	if w.onEvent != nil {
 		w.onEvent(watchCacheEvent)
 	}
+	//更新滑动窗口
 	w.updateCache(resourceVersion, watchCacheEvent)
 	w.resourceVersion = resourceVersion
 	w.cond.Broadcast()
+	//更新至cache
 	return updateFunc(elem)
 }
 
 // Assumes that lock is already held for write.
+//更新滑动窗口
 func (w *watchCache) updateCache(resourceVersion uint64, event *watchCacheEvent) {
 	if w.endIndex == w.startIndex+w.capacity {
 		// Cache is full - remove the oldest element.

@@ -52,6 +52,8 @@ import (
 // Storage is a generic interface for RESTful storage services.
 // Resources which are exported to the RESTful API of apiserver need to implement this interface. It is expected
 // that objects may implement any of the below interfaces.
+// RESTful存储服务的通用接口。
+// 导出到apiserver的 RESTful API 的资源需要实现此接口。 预期对象可以实现以下任何接口。
 type Storage interface {
 	// New returns an empty object that can be used with Create and Update after request data has been put into it.
 	// This object must be a pointer type for use with Codec.DecodeInto([]byte, runtime.Object)

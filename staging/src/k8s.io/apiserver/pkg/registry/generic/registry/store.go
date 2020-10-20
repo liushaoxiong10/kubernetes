@@ -57,9 +57,13 @@ type ObjectFunc func(obj runtime.Object) error
 
 // GenericStore interface can be used for type assertions when we need to access the underlying strategies.
 type GenericStore interface {
+	//创建资源对象时预处理操作
 	GetCreateStrategy() rest.RESTCreateStrategy
+	//更新资源对象时的预处理操作
 	GetUpdateStrategy() rest.RESTUpdateStrategy
+	//删除资源对象时的预处理操作
 	GetDeleteStrategy() rest.RESTDeleteStrategy
+	//导出资源对象时的预处理操作
 	GetExportStrategy() rest.RESTExportStrategy
 }
 
@@ -147,18 +151,21 @@ type Store struct {
 	// they cannot be watched.
 	Decorator ObjectFunc
 	// CreateStrategy implements resource-specific behavior during creation.
+	// 创建资源对象时的预处理操作
 	CreateStrategy rest.RESTCreateStrategy
 	// AfterCreate implements a further operation to run after a resource is
 	// created and before it is decorated, optional.
 	AfterCreate ObjectFunc
 
 	// UpdateStrategy implements resource-specific behavior during updates.
+	// 更新对象时的预处理操作
 	UpdateStrategy rest.RESTUpdateStrategy
 	// AfterUpdate implements a further operation to run after a resource is
 	// updated and before it is decorated, optional.
 	AfterUpdate ObjectFunc
 
 	// DeleteStrategy implements resource-specific behavior during deletion.
+	// 删除对象是的预处理操作
 	DeleteStrategy rest.RESTDeleteStrategy
 	// AfterDelete implements a further operation to run after a resource is
 	// deleted and before it is decorated, optional.
@@ -168,6 +175,7 @@ type Store struct {
 	ReturnDeletedObject bool
 	// ExportStrategy implements resource-specific behavior during export,
 	// optional. Exported objects are not decorated.
+	// 导出对象时的预处理
 	ExportStrategy rest.RESTExportStrategy
 	// TableConvertor is an optional interface for transforming items or lists
 	// of items into tabular output. If unset, the default will be used.
@@ -330,7 +338,9 @@ func (e *Store) ListPredicate(ctx context.Context, p storage.SelectionPredicate,
 }
 
 // Create inserts a new item according to the unique key from the object.
+// 创建资源对象
 func (e *Store) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
+	// 预处理
 	if err := rest.BeforeCreate(e.CreateStrategy, ctx, obj); err != nil {
 		return nil, err
 	}
@@ -356,6 +366,7 @@ func (e *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 		return nil, err
 	}
 	out := e.NewFunc()
+	// 创建资源对象
 	if err := e.Storage.Create(ctx, key, obj, out, ttl, dryrun.IsDryRun(options.DryRun)); err != nil {
 		err = storeerr.InterpretCreateError(err, qualifiedResource, name)
 		err = rest.CheckGeneratedNameError(e.CreateStrategy, err, obj)
@@ -375,6 +386,7 @@ func (e *Store) Create(ctx context.Context, obj runtime.Object, createValidation
 		}
 		return nil, err
 	}
+	// 收尾工作
 	if e.AfterCreate != nil {
 		if err := e.AfterCreate(out); err != nil {
 			return nil, err

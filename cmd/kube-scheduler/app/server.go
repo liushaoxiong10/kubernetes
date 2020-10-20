@@ -106,6 +106,7 @@ through the API as necessary.`,
 }
 
 // runCommand runs the scheduler.
+//启动 scheduler
 func runCommand(cmd *cobra.Command, args []string, opts *options.Options) error {
 	verflag.PrintAndExitIfRequested()
 	utilflag.PrintFlags(cmd.Flags())
@@ -192,6 +193,7 @@ func Run(cc schedulerserverconfig.CompletedConfig, stopCh <-chan struct{}) error
 	}
 
 	// Setup healthz checks.
+	//健康检查
 	var checks []healthz.HealthzChecker
 	if cc.ComponentConfig.LeaderElection.LeaderElect {
 		checks = append(checks, cc.LeaderElection.WatchDog)
@@ -205,6 +207,7 @@ func Run(cc schedulerserverconfig.CompletedConfig, stopCh <-chan struct{}) error
 			return fmt.Errorf("failed to start healthz server: %v", err)
 		}
 	}
+	//metric 相关
 	if cc.InsecureMetricsServing != nil {
 		handler := buildHandlerChain(newMetricsHandler(&cc.ComponentConfig), nil, nil)
 		if err := cc.InsecureMetricsServing.Serve(handler, 0, stopCh); err != nil {
@@ -221,6 +224,7 @@ func Run(cc schedulerserverconfig.CompletedConfig, stopCh <-chan struct{}) error
 	}
 
 	// Start all informers.
+	//启动 informer
 	go cc.PodInformer.Informer().Run(stopCh)
 	cc.InformerFactory.Start(stopCh)
 
@@ -229,11 +233,13 @@ func Run(cc schedulerserverconfig.CompletedConfig, stopCh <-chan struct{}) error
 	controller.WaitForCacheSync("scheduler", stopCh, cc.PodInformer.Informer().HasSynced)
 
 	// Prepare a reusable runCommand function.
+	//预先创建启动函数
 	run := func(ctx context.Context) {
 		sched.Run()
 		<-ctx.Done()
 	}
 
+	//创建上下文
 	ctx, cancel := context.WithCancel(context.TODO()) // TODO once Run() accepts a context, it should be used here
 	defer cancel()
 
@@ -246,6 +252,7 @@ func Run(cc schedulerserverconfig.CompletedConfig, stopCh <-chan struct{}) error
 	}()
 
 	// If leader election is enabled, runCommand via LeaderElector until done and exit.
+	//是否启用leader 选举
 	if cc.LeaderElection != nil {
 		cc.LeaderElection.Callbacks = leaderelection.LeaderCallbacks{
 			OnStartedLeading: run,

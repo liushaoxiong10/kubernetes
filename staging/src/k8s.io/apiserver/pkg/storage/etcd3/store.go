@@ -58,6 +58,7 @@ func (d authenticatedDataString) AuthenticatedData() []byte {
 
 var _ value.Context = authenticatedDataString("")
 
+// 底层存储对象
 type store struct {
 	client *clientv3.Client
 	// getOpts contains additional options that should be passed
@@ -111,6 +112,7 @@ func (s *store) Versioner() storage.Versioner {
 // Get implements storage.Interface.Get.
 func (s *store) Get(ctx context.Context, key string, resourceVersion string, out runtime.Object, ignoreNotFound bool) error {
 	key = path.Join(s.pathPrefix, key)
+	//获取etcd中资源对象的数据
 	getResp, err := s.client.KV.Get(ctx, key, s.getOps...)
 	if err != nil {
 		return err
@@ -129,6 +131,7 @@ func (s *store) Get(ctx context.Context, key string, resourceVersion string, out
 		return storage.NewInternalError(err.Error())
 	}
 
+	//解码
 	return decode(s.codec, s.versioner, data, out, kv.ModRevision)
 }
 
@@ -774,11 +777,13 @@ func decode(codec runtime.Codec, versioner storage.Versioner, value []byte, objP
 	if _, err := conversion.EnforcePtr(objPtr); err != nil {
 		panic("unable to convert output object to pointer")
 	}
+	//通过 protobfSerializer 解码
 	_, _, err := codec.Decode(value, nil, objPtr)
 	if err != nil {
 		return err
 	}
 	// being unable to set the version does not prevent the object from being extracted
+	//更新资源对象
 	versioner.UpdateObject(objPtr, uint64(rev))
 	return nil
 }

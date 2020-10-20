@@ -90,6 +90,7 @@ type KubeControllerManagerConfiguration struct {
 	// both in cloud controller manager and kube-controller manager.
 	KubeCloudShared KubeCloudSharedConfiguration
 
+	// 各个控制器配置
 	// AttachDetachControllerConfiguration holds configuration for
 	// AttachDetachController related features.
 	AttachDetachController AttachDetachControllerConfiguration
@@ -150,20 +151,26 @@ type KubeControllerManagerConfiguration struct {
 }
 
 // GenericControllerManagerConfiguration holds configuration for a generic controller-manager.
+// controller-manager 配置
 type GenericControllerManagerConfiguration struct {
 	// port is the port that the controller-manager's http service runs on.
+	// 监听端口
 	Port int32
 	// address is the IP address to serve on (set to 0.0.0.0 for all interfaces).
+	// 监听地址
 	Address string
 	// minResyncPeriod is the resync period in reflectors; will be random between
 	// minResyncPeriod and 2*minResyncPeriod.
+	// 最小 resync 时间
 	MinResyncPeriod metav1.Duration
 	// ClientConnection specifies the kubeconfig file and client connection
 	// settings for the proxy server to use when communicating with the apiserver.
+	// client 配置
 	ClientConnection componentbaseconfigv1alpha1.ClientConnectionConfiguration
 	// How long to wait between starting controller managers
 	ControllerStartInterval metav1.Duration
 	// leaderElection defines the configuration of leader election client.
+	// leader 竞选配置
 	LeaderElection componentbaseconfigv1alpha1.LeaderElectionConfiguration
 	// Controllers is the list of controllers to enable or disable
 	// '*' means "all enabled by default controllers"

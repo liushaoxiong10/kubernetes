@@ -246,6 +246,7 @@ func (eventBroadcaster *eventBroadcasterImpl) StartEventWatcher(eventHandler fun
 }
 
 // NewRecorder returns an EventRecorder that records events with the given event source.
+// 返回一个事件消费者
 func (eventBroadcaster *eventBroadcasterImpl) NewRecorder(scheme *runtime.Scheme, source v1.EventSource) EventRecorder {
 	return &recorderImpl{scheme, source, eventBroadcaster.Broadcaster, clock.RealClock{}}
 }

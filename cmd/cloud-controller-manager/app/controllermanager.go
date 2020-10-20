@@ -54,6 +54,7 @@ const (
 )
 
 // NewCloudControllerManagerCommand creates a *cobra.Command object with default parameters
+// 创建 controller manager 命令
 func NewCloudControllerManagerCommand() *cobra.Command {
 	s, err := options.NewCloudControllerManagerOptions()
 	if err != nil {
@@ -65,9 +66,12 @@ func NewCloudControllerManagerCommand() *cobra.Command {
 		Long: `The Cloud controller manager is a daemon that embeds
 the cloud specific control loops shipped with Kubernetes.`,
 		Run: func(cmd *cobra.Command, args []string) {
+			// 启动函数
+
 			verflag.PrintAndExitIfRequested()
 			utilflag.PrintFlags(cmd.Flags())
 
+			// 格式化配置
 			c, err := s.Config(KnownControllers(), ControllersDisabledByDefault.List())
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%v\n", err)
@@ -259,6 +263,7 @@ func startControllers(c *cloudcontrollerconfig.CompletedConfig, stopCh <-chan st
 type initFunc func(ctx *cloudcontrollerconfig.CompletedConfig, cloud cloudprovider.Interface, stop <-chan struct{}) (debuggingHandler http.Handler, enabled bool, err error)
 
 // KnownControllers indicate the default controller we are known.
+// 默认控制器
 func KnownControllers() []string {
 	ret := sets.StringKeySet(newControllerInitializers())
 	return ret.List()
@@ -269,6 +274,7 @@ var ControllersDisabledByDefault = sets.NewString()
 
 // newControllerInitializers is a private map of named controller groups (you can start more than one in an init func)
 // paired to their initFunc.  This allows for structured downstream composition and subdivision.
+// 与它们的initFunc配对的已命名控制器组（您可以在init函数中启动多个）的私有映射。 这允许结构化的下游组成和细分。
 func newControllerInitializers() map[string]initFunc {
 	controllers := map[string]initFunc{}
 	controllers["cloud-node"] = startCloudNodeController

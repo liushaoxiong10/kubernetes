@@ -43,6 +43,7 @@ type RESTCreateStrategy interface {
 	names.NameGenerator
 
 	// NamespaceScoped returns true if the object must be within a namespace.
+	//判断当前资源对象是否拥有所属的命名空间，如果有所属的命名空间，则返回true，否则为false
 	NamespaceScoped() bool
 	// PrepareForCreate is invoked on create before validation to normalize
 	// the object.  For example: remove fields that are not to be persisted,
@@ -53,11 +54,13 @@ type RESTCreateStrategy interface {
 	// status. Clear the status because status changes are internal. External
 	// callers of an api (users) should not be setting an initial status on
 	// newly created objects.
+	//创建当前资源对象前的预处理函数
 	PrepareForCreate(ctx context.Context, obj runtime.Object)
 	// Validate returns an ErrorList with validation errors or nil.  Validate
 	// is invoked after default fields in the object have been filled in
 	// before the object is persisted.  This method should not mutate the
 	// object.
+	//创建当前资源对象前的验证函数，验证字段信息，不会修改资源对象
 	Validate(ctx context.Context, obj runtime.Object) field.ErrorList
 	// Canonicalize allows an object to be mutated into a canonical form. This
 	// ensures that code that operates on these objects can rely on the common
@@ -65,6 +68,7 @@ type RESTCreateStrategy interface {
 	// validation has succeeded but before the object has been persisted.
 	// This method may mutate the object. Often implemented as a type check or
 	// empty method.
+	//创建资源对象前，将存储的资源对象规范化
 	Canonicalize(obj runtime.Object)
 }
 
@@ -77,6 +81,7 @@ func BeforeCreate(strategy RESTCreateStrategy, ctx context.Context, obj runtime.
 		return kerr
 	}
 
+	//验证命名空间
 	if strategy.NamespaceScoped() {
 		if !ValidNamespace(ctx, objectMeta) {
 			return errors.NewBadRequest("the namespace of the provided object does not match the namespace sent on the request")
@@ -86,6 +91,7 @@ func BeforeCreate(strategy RESTCreateStrategy, ctx context.Context, obj runtime.
 	}
 	objectMeta.SetDeletionTimestamp(nil)
 	objectMeta.SetDeletionGracePeriodSeconds(nil)
+	//修改资源对象的属性、清除资源对象的状态
 	strategy.PrepareForCreate(ctx, obj)
 	FillObjectMetaSystemFields(objectMeta)
 	if len(objectMeta.GetGenerateName()) > 0 && len(objectMeta.GetName()) == 0 {
@@ -105,6 +111,7 @@ func BeforeCreate(strategy RESTCreateStrategy, ctx context.Context, obj runtime.
 		objectMeta.SetClusterName("")
 	}
 
+	//验证资源对象是否合法
 	if errs := strategy.Validate(ctx, obj); len(errs) > 0 {
 		return errors.NewInvalid(kind.GroupKind(), objectMeta.GetName(), errs)
 	}
@@ -116,6 +123,7 @@ func BeforeCreate(strategy RESTCreateStrategy, ctx context.Context, obj runtime.
 		return errors.NewInvalid(kind.GroupKind(), objectMeta.GetName(), errs)
 	}
 
+	//将存储的资源对象规范化
 	strategy.Canonicalize(obj)
 
 	return nil

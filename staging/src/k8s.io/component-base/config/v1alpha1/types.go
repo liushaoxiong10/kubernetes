@@ -24,6 +24,7 @@ const EndpointsResourceLock = "endpoints"
 
 // LeaderElectionConfiguration defines the configuration of leader election
 // clients for components that can run with leader election enabled.
+// leader 选举配置
 type LeaderElectionConfiguration struct {
 	// leaderElect enables a leader election client to gain leadership
 	// before executing the main loop. Enable this when running replicated
@@ -51,6 +52,7 @@ type LeaderElectionConfiguration struct {
 }
 
 // DebuggingConfiguration holds configuration for Debugging related features.
+// debug 配置
 type DebuggingConfiguration struct {
 	// enableProfiling enables profiling via web interface host:port/debug/pprof/
 	EnableProfiling bool `json:"enableProfiling"`
@@ -62,10 +64,12 @@ type DebuggingConfiguration struct {
 // ClientConnectionConfiguration contains details for constructing a client.
 type ClientConnectionConfiguration struct {
 	// kubeconfig is the path to a KubeConfig file.
+	// kubeconfig 文件路径
 	Kubeconfig string `json:"kubeconfig"`
 	// acceptContentTypes defines the Accept header sent by clients when connecting to a server, overriding the
 	// default value of 'application/json'. This field will control all connections to the server used by a particular
 	// client.
+	// 默认值 'application/json'
 	AcceptContentTypes string `json:"acceptContentTypes"`
 	// contentType is the content type used when sending data to the server from this client.
 	ContentType string `json:"contentType"`

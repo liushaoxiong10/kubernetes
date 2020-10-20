@@ -202,6 +202,7 @@ func (o *Options) ApplyTo(c *schedulerappconfig.Config) error {
 }
 
 // Validate validates all the required options.
+//检查所有参数
 func (o *Options) Validate() []error {
 	var errs []error
 
@@ -218,6 +219,7 @@ func (o *Options) Validate() []error {
 }
 
 // Config return a scheduler config object
+// 创建config对象
 func (o *Options) Config() (*schedulerappconfig.Config, error) {
 	if o.SecureServing != nil {
 		if err := o.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", nil, []net.IP{net.ParseIP("127.0.0.1")}); err != nil {

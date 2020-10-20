@@ -432,13 +432,15 @@ func (sched *Scheduler) bind(assumed *v1.Pod, b *v1.Binding) error {
 }
 
 // scheduleOne does the entire scheduling workflow for a single pod.  It is serialized on the scheduling algorithm's host fitting.
+//每次调度一个Pod
 func (sched *Scheduler) scheduleOne() {
 	plugins := sched.config.PluginSet
 	// Remove all plugin context data at the beginning of a scheduling cycle.
 	if plugins.Data().Ctx != nil {
 		plugins.Data().Ctx.Reset()
 	}
-
+	
+	// 从队列中取出待调度的Pod
 	pod := sched.config.NextPod()
 	// pod could be nil when schedulerQueue is closed
 	if pod == nil {
@@ -454,6 +456,7 @@ func (sched *Scheduler) scheduleOne() {
 
 	// Synchronously attempt to find a fit for the pod.
 	start := time.Now()
+	//  获取待调度Pod匹配的主机名
 	scheduleResult, err := sched.schedule(pod)
 	if err != nil {
 		// schedule() may have failed because the pod would not fit on any host, so we try to
@@ -487,6 +490,7 @@ func (sched *Scheduler) scheduleOne() {
 	metrics.DeprecatedSchedulingAlgorithmLatency.Observe(metrics.SinceInMicroseconds(start))
 	// Tell the cache to assume that a pod now is running on a given node, even though it hasn't been bound yet.
 	// This allows us to keep scheduling without waiting on binding to occur.
+	// Pod与Node缓存，保证调度一直进行，不用等待每次绑定完成（绑定是一个耗时的过程）
 	assumedPod := pod.DeepCopy()
 
 	// Assume volumes first before assuming the pod.
@@ -496,6 +500,7 @@ func (sched *Scheduler) scheduleOne() {
 	// Otherwise, binding of volumes is started after the pod is assumed, but before pod binding.
 	//
 	// This function modifies 'assumedPod' if volume binding is required.
+	// 判断是否需要VolumeScheduling特性
 	allBound, err := sched.assumeVolumes(assumedPod, scheduleResult.SuggestedHost)
 	if err != nil {
 		klog.Errorf("error assuming volumes: %v", err)
@@ -514,6 +519,7 @@ func (sched *Scheduler) scheduleOne() {
 		}
 	}
 	// assume modifies `assumedPod` by setting NodeName=scheduleResult.SuggestedHost
+	// Pod对应的NodeName写上主机名，存入缓存
 	err = sched.assume(assumedPod, scheduleResult.SuggestedHost)
 	if err != nil {
 		klog.Errorf("error assuming pod: %v", err)
@@ -521,6 +527,7 @@ func (sched *Scheduler) scheduleOne() {
 		return
 	}
 	// bind the pod to its host asynchronously (we can do this b/c of the assumption step above).
+	//  请求apiserver，异步处理最终的绑定，写入到etcd
 	go func() {
 		// Bind volumes first before Pod
 		if !allBound {

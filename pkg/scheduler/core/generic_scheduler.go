@@ -130,6 +130,7 @@ type ScheduleResult struct {
 	FeasibleNodes int
 }
 
+//调度算法实现
 type genericScheduler struct {
 	cache                    schedulerinternalcache.Cache
 	schedulingQueue          internalqueue.SchedulingQueue
@@ -437,9 +438,11 @@ func (g *genericScheduler) findNodesThatFit(pod *v1.Pod, nodes []*v1.Node) ([]*v
 	failedPredicateMap := FailedPredicateMap{}
 
 	if len(g.predicates) == 0 {
+		//如果没有预选算法，则直接返回
 		filtered = nodes
 	} else {
 		allNodes := int32(g.cache.NodeTree().NumNodes())
+		//获取可调度的node
 		numNodesToFind := g.numFeasibleNodesToFind(allNodes)
 
 		// Create filtered list with enough space to avoid growing it
@@ -456,6 +459,7 @@ func (g *genericScheduler) findNodesThatFit(pod *v1.Pod, nodes []*v1.Node) ([]*v
 		// We can use the same metadata producer for all nodes.
 		meta := g.predicateMetaProducer(pod, g.nodeInfoSnapshot.NodeInfoMap)
 
+		//预选检查
 		checkNode := func(i int) {
 			nodeName := g.cache.NodeTree().Next()
 			fits, failedPredicates, err := podFitsOnNode(
@@ -489,6 +493,7 @@ func (g *genericScheduler) findNodesThatFit(pod *v1.Pod, nodes []*v1.Node) ([]*v
 
 		// Stops searching for more nodes once the configured number of feasible nodes
 		// are found.
+		//并行处理多个Node的checkNode工作， 一次最多检查16个
 		workqueue.ParallelizeUntil(ctx, 16, int(allNodes), checkNode)
 
 		filtered = filtered[:filteredLen]
@@ -498,6 +503,7 @@ func (g *genericScheduler) findNodesThatFit(pod *v1.Pod, nodes []*v1.Node) ([]*v
 	}
 
 	if len(filtered) > 0 && len(g.extenders) != 0 {
+		//配置了扩展调度算法
 		for _, extender := range g.extenders {
 			if !extender.IsInterested(pod) {
 				continue
@@ -568,6 +574,11 @@ func addNominatedPods(pod *v1.Pod, meta predicates.PredicateMetadata,
 // When it is called from Preempt, we should remove the victims of preemption and
 // add the nominated pods. Removal of the victims is done by SelectVictimsOnNode().
 // It removes victims from meta and NodeInfo before calling this function.
+// podFitsOnNode 根据给定的NodeInfo判断是否匹配相应的预选函数
+// 对于一个给定的Pod，podFitsOnNode会检查之前是否有等价的Pod，这样就可以直接复用等价Pod的预选结果
+// 该函数会有两个地方调用：Schedule和Preempt
+// 当Schedule（正常调度）的时候，判断Node上所有已经存在的Pod和将被指定将要调度到这个Node上的其他所有高优先级Pod外，当前的Pod是否可以调度
+// 当Preempt（抢占式）的时候，
 func podFitsOnNode(
 	pod *v1.Pod,
 	meta predicates.PredicateMetadata,

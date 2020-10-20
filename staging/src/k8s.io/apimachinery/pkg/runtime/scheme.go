@@ -93,6 +93,7 @@ type Scheme struct {
 type FieldLabelConversionFunc func(label, value string) (internalLabel, internalValue string, err error)
 
 // NewScheme creates a new Scheme. This scheme is pluggable by default.
+// 创建新的 Scheme
 func NewScheme() *Scheme {
 	s := &Scheme{
 		gvkToType:                 map[schema.GroupVersionKind]reflect.Type{},

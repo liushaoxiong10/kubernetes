@@ -25,7 +25,9 @@ import (
 )
 
 // Config is the main context object for the controller manager.
+// controller manager 主配置
 type Config struct {
+	// 控制器配置
 	ComponentConfig kubectrlmgrconfig.KubeControllerManagerConfiguration
 
 	SecureServing *apiserver.SecureServingInfo
@@ -41,12 +43,15 @@ type Config struct {
 	Client *clientset.Clientset
 
 	// the client only used for leader election
+	// leader 竞选
 	LeaderElectionClient *clientset.Clientset
 
 	// the rest config for the master
+	// Kubeconfig 配置
 	Kubeconfig *restclient.Config
 
 	// the event sink
+	// 事件处理
 	EventRecorder record.EventRecorder
 }
 

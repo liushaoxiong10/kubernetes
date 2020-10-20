@@ -31,6 +31,7 @@ import (
 )
 
 // Creates a cacher based given storageConfig.
+// 创建 cacher
 func StorageWithCacher(capacity int) generic.StorageDecorator {
 	return func(
 		storageConfig *storagebackend.Config,
@@ -41,6 +42,7 @@ func StorageWithCacher(capacity int) generic.StorageDecorator {
 		getAttrsFunc storage.AttrFunc,
 		triggerFunc storage.TriggerPublisherFunc) (storage.Interface, factory.DestroyFunc) {
 
+		// 创建底层存储
 		s, d := generic.NewRawStorage(storageConfig)
 		if capacity == 0 {
 			klog.V(5).Infof("Storage caching is disabled for %T", objectType)
@@ -62,6 +64,7 @@ func StorageWithCacher(capacity int) generic.StorageDecorator {
 			TriggerPublisherFunc: triggerFunc,
 			Codec:                storageConfig.Codec,
 		}
+		// 创建cacher
 		cacher := cacherstorage.NewCacherFromConfig(cacherConfig)
 		destroyFunc := func() {
 			cacher.Stop()
